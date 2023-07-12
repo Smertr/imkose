@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Veri Girişi</title>
+    <style>
+     .button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      button {
+        background-color: #2c3e50;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+        font-size: 16px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        border-radius: 10px;
+        box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="button-container">
+      <button id="button1">Kamyon Veri Girişi</button>
+      <button id="button2">Makine Veri Girişi</button>
+      <button id="button3">Yardımcı Makine Veri Girişi</button>
+      <button id="button4">Diğer Saha Araçları Veri Girişi</button>
+      <button id="button5">Binek Araçlar Veri Girişi</button>
+      <button id="button6">Ek Yakıt Veri Girişi</button>
+      <button id="button7">Delici Veri Girişi</button>
+      <button id="button9">M3 - Ton Veri Girişi</button>
+      <button id="button10">Günlük Veri Kontrolü</button>
+      <button id="button8">Kayıtlı Özet Veri Sorgulama</button>
+    </div>
+    
+     <!--AWS Javascript SDKs-->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+    <script>
+      var company = "";
+      var site    = "";
+
+
+      // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
+
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+
+      cognitoUser.getSession(function(err, session) {
+              if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              cognitoUser.getUserAttributes(function(err, result) {
+                  if (err) {
+                    console.log(err);
+                    window.location.href = "login.html";
+                    return;
+                  }else{
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  
+                  console.log(result);
+                  }
+                 
+              });
+    
+      });
+
+
+
+
+
+      const button1 = document.getElementById('button1');
+      button1.addEventListener('click', () => {
+        window.location.href = "kamyonVerisi.html";
+        console.log('Button 1 clicked!');
+      });
+
+      const button2 = document.getElementById('button2');
+      button2.addEventListener('click', () => {
+        window.location.href = "makineVerisi.html";
+        console.log('Button 2 clicked!');
+      });
+
+       const button3 = document.getElementById('button3');
+      button3.addEventListener('click', () => {
+        window.location.href = "yardımcıMakineVerisi.html";
+        console.log('Button 3 clicked!');
+      });
+
+
+       const button4 = document.getElementById('button4');
+      button4.addEventListener('click', () => {
+        window.location.href = "digerSahaAracVerisi.html";
+        console.log('Button 4 clicked!');
+      });
+
+
+       const button5 = document.getElementById('button5');
+      button5.addEventListener('click', () => {
+        window.location.href = "binekAracVerisi.html";
+        console.log('Button 5 clicked!');
+      });
+
+
+       const button6 = document.getElementById('button6');
+      button6.addEventListener('click', () => {
+        window.location.href = "ekyakıtVerisi.html";
+        console.log('Button 6 clicked!');
+      });
+
+
+       const button7 = document.getElementById('button7');
+      button7.addEventListener('click', () => {
+        window.location.href = "deliciAracVerisi.html";
+        console.log('Button 7 clicked!');
+      });
+
+      const button8 = document.getElementById('button8');
+      button8.addEventListener('click', () => {
+        window.location.href = "summaryQuery.html";
+        console.log('Button 8 clicked!');
+      });
+
+
+      const button9 = document.getElementById('button9');
+      button9.addEventListener('click', () => {
+        window.location.href = "capacityForm.html";
+        console.log('Button 9 clicked!');
+      });
+
+      const button10 = document.getElementById('button10');
+      button10.addEventListener('click', () => {
+        window.location.href = "summaryCalculation.html";
+        console.log('Button 10 clicked!');
+      });
+
+
+
+
+    </script>
+  </body>
+</html>

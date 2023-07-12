@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Date Form</title>
+    <style>
+        #date-form {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: left !important;
+            align-items: left !important;
+            padding: 10px !important;
+            border: 1px solid gray !important;
+            border-radius: 5px !important;
+            max-width: 200px !important;
+            font-family: Arial, sans-serif !important;
+            margin-bottom: 10px !important;
+            margin-left: 20px !important;
+        }
+        
+        #date-form label {
+            margin-right: 1px !important;
+            margin-bottom: 5px !important;
+            margin-top: 20px !important;
+        }
+        
+        #date-form input[type="date"] {
+            border: 1px solid gray !important;
+            border-radius: 5px !important;
+            padding: 5px !important;
+            font-size: 20px !important;
+            font-family: Arial, sans-serif !important;
+        }
+
+        #date-form select {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: left !important;
+            align-items: left !important;
+            padding: 5px !important;
+            border: 1px solid gray !important;
+            border-radius: 5px !important;
+            max-width: 150px !important;
+            font-family: Arial, sans-serif !important;
+            font-size: 20px !important;
+            margin-bottom: 10px !important;
+        }
+
+        #date-form select label {
+            margin-right: 1px !important;
+            margin-bottom: 5px !important;
+            margin-top: 10px !important;
+        }
+
+        #confirm-button {
+            background-color: #2c3e50 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 5px !important;
+            padding: 10px 20px !important;
+            font-size: 18px !important;
+            cursor: pointer !important;
+            max-width: 100px !important;
+            margin-bottom: 5px !important;
+            margin-top: 20px !important;
+            justify-content: right !important;
+            align-items: right !important;
+        }
+
+        #confirm-button:hover {
+            background-color: #45a049 !important;
+        }
+
+
+        #data-table {
+          border-collapse: collapse;
+        }
+
+        #data-table td,
+        #data-table th {
+          border: 1px solid #ddd;
+          padding: 8px;
+        }
+
+        #data-table tr:nth-child(even) {
+          background-color: #f2f2f2;
+        }
+
+        #data-table th {
+          padding-top: 12px;
+          padding-bottom: 12px;
+          text-align: left;
+          background-color: #4CAF50;
+          color: white;
+        }
+
+
+        
+
+    </style>
+
+
+  </head>
+  <body>
+    <form id="date-form" style="display: none;">
+        <label for="start-date">Başlangıç:</label>
+        <input type="date" id="start-date">
+
+        <label for="end-date">Bitiş:</label>
+        <input type="date" id="end-date">
+
+        <label for="zone">Bölge:</label>
+        <select id="zone"></select>
+
+        <label for="type">Araç Tipi:</label>
+        <select id="type"></select>
+
+        <label for="vehicle">Araç:</label>
+        <select id="vehicle"></select>
+         
+       
+        
+        <button id="confirm-button">Sorgula</button>
+
+    </form>
+
+
+    <br>
+    <br>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+
+    <!-- jQuery -->
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/fixedheader/3.2.0/css/fixedHeader.dataTables.min.css">
+
+
+    <!-- DataTables CSS -->
+    <link rel="stylesheet"  href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+
+    <!-- DataTables JavaScript -->
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+
+    <!-- DataTables Buttons CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.dataTables.min.css">
+
+    <!-- DataTables Buttons JavaScript -->
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+    <!-- Include the FixedHeader CSS -->
+   
+
+    
+
+    
+
+    <br>
+   
+    <br>
+    <table id="data-table" class="display"></table>
+
+
+    
+ 
+    
+
+    
+    <script>
+      var company  = "imkose";
+      let arac     = [];
+      let models   = [];
+      let kms      = [];
+      let markas   = [];
+      let tips     = [];
+      let sites    = [];
+      var zones    = [];
+      var types    = [];
+      var vehicles = [];
+      var capacitys= [];
+
+      var startTimestamp;
+      var endTimestamp; 
+
+       //console.log(rows); // Log the fetched data
+      
+        const apiEndpoint1 = 'https://aryuhdwxje.execute-api.us-east-1.amazonaws.com/all/allvehicles';
+        const url1 = `${apiEndpoint1}?company=${company}`;
+        
+        fetch(url1)
+          .then(response => response.json())
+          .then(data => {
+            arac = Object.keys(data);
+            Object.values(data).forEach(value => {
+              const [model, km, marka, tip, site, capacity] = value.split("-").map(value => value.trim());
+              models.push(model);
+              kms.push(km);
+              markas.push(marka);
+              tips.push(tip);
+              sites.push(site);
+              capacitys.push(capacity)
+
+            });
+
+           getDatas()
+            
+  
+          })
+          .catch(error => console.error(error));
+      
+     
+      
+
+      
+function getDatas(){
+         if (zones.length === 0) {
+                zones.push({ label: "HEPSİ", value: "*" });
+                types.push({ label: "HEPSİ", value: "*" });
+                vehicles.push({ label: "HEPSİ", value: "*" });
+          }
+
+          for (let i = 0; i < arac.length; i++) {
+                // Check if the data already exists before pushing
+                if (!zones.some((zone) => zone.value === sites[i])) {
+                   zones.push({ label: sites[i], value: sites[i] });
+                }
+                if (!types.some((type) => type.value === tips[i])) {
+                    types.push({ label: tips[i], value: tips[i] });
+                }
+                if (!vehicles.some((vehicle) => vehicle.value === arac[i])) {
+                    vehicles.push({ label: arac[i], value: arac[i] });
+                }
+          }
+
+      
+          document.getElementById("date-form").style.display = "block";
+         
+     
+          var startDateInput = document.getElementById("start-date");
+          var endDateInput = document.getElementById("end-date");
+          var zoneSelect = document.getElementById("zone");
+          var typeSelect = document.getElementById("type")
+          var vehicleSelect = document.getElementById("vehicle")
+          var confirmButton = document.getElementById("confirm-button");
+
+
+          // Function to assign values to the drop-down list
+          function assignDurationValues() {
+            
+
+            // Loop through the durations array and create option elements
+            for (var i = 0; i < zones.length; i++) {
+              var option = document.createElement("option");
+              option.text = zones[i].label;
+              option.value = zones[i].value;
+              zoneSelect.appendChild(option);
+            }
+
+            for (var i = 0; i < types.length; i++) {
+              var option = document.createElement("option");
+              option.text = types[i].label;
+              option.value = types[i].value;
+              typeSelect.appendChild(option);
+            }
+
+            for (var i = 0; i < vehicles.length; i++) {
+              var option = document.createElement("option");
+              option.text = vehicles[i].label;
+              option.value = vehicles[i].value;
+              vehicleSelect.appendChild(option);
+            }
+            
+          }
+
+          // Call the function to assign values when the page loads
+
+          assignDurationValues();
+
+          
+
+          confirmButton.addEventListener("click", function(event) {
+                event.preventDefault(); // Prevent form submission prevent disappear console.log
+
+                var startDateValue = startDateInput.value;
+                var endDateValue = endDateInput.value;
+                var zoneValue = zoneSelect.value;
+                var typeValue = typeSelect.value;
+                var vehicleValue = vehicleSelect.value;
+
+
+                var startDate = new Date(startDateValue);
+                var endDate = new Date(endDateValue);
+
+                startTimestamp = startDate.getTime() / 1000;
+                endTimestamp = endDate.getTime() / 1000;
+
+                //
+
+                var ts1 = startTimestamp;//1640984400
+                var ts2 = endTimestamp;//1651243600
+               
+    
+
+                const apiEndpoint = 'https://vml6btsk1h.execute-api.us-east-1.amazonaws.com/daily/querry';
+                const url = `${apiEndpoint}?startdate=${ts1}&enddate=${ts2}&type=${typeValue}&site=${zoneValue}&plaka=${vehicleValue}`;
+///////////////////////////
+
+fetch(url)
+  .then(response => response.json())
+  .then(data => {
+    var rows = Object.values(data);
+    console.log(rows);
+
+    // Convert the Unix timestamps to dates
+    rows.forEach(row => {
+      const timestampInSeconds = row.ts; // Assuming the timestamp property name is "ts"
+      const timestampInMilliseconds = timestampInSeconds * 1000; // Convert to milliseconds
+      row.ts = new Date(timestampInMilliseconds); // Create a JavaScript Date object
+
+
+      var cap = []; // Initialize the capacity array
+
+      // Iterate over the plate names and capacity values
+      for (var i = 0; i < arac.length; i++) {
+        var aracs = arac[i];
+        var kapasite = capacitys[i];
+
+        // Create an object with the plate name and capacity, and add it to the capacity array
+        var capacityObj = {
+          plaka: aracs,
+          capacity: kapasite
+        };
+        
+        cap.push(capacityObj);
+      }
+
+
+      row["Toplam KM / Saat"] = row["Bitiş KM / Saat"] - row["Başlangıç KM / Saat"]; // Assuming column1 and column2 are numeric
+      row["Toplam Sefer"] =
+        parseInt(row["Gündüz Dekapaj Sefer"]) +
+        parseInt(row["Gece Dekapaj Sefer"]) +
+        parseInt(row["Gündüz Bunker Sefer"]) +
+        parseInt(row["Gece Bunker Sefer"]) +
+        parseInt(row["Gündüz Stok Sefer"]) +
+        parseInt(row["Gece Stok Sefer"]);
+
+      const matchingCapacity = cap.find(item => item.plaka === row.id); // Find matching capacity based on the row's "id" property
+      const capacityValue = matchingCapacity ? matchingCapacity.capacity : 0;
+      row["Toplam M3"]        = parseInt(row["Toplam Sefer"]) * capacityValue;
+      
+      //row["Toplam M3"]        = parseInt(row["Toplam Sefer"]) * 17.5;
+      row["Toplam Mazot"]     = parseInt(row["Gündüz Mazot"]) + parseInt(row["Gece Mazot"]);
+      row["Sefer / LT"]       = parseFloat(row["Toplam Sefer"] / row["Toplam Mazot"]).toFixed(2);
+      row["KM-Saat / LT"]     = parseFloat(row["Toplam Mazot"] / row["Toplam KM / Saat"]).toFixed(2);
+    });
+
+    // Define the columns to include and their desired order and names
+    var columnOrder = [ { key: 'ts', name: 'Tarih' },
+                        { key: 'id', name: 'Plaka' }, 
+                        { key: 'Başlangıç KM / Saat', name: 'Başlangıç KM / Saat' }, 
+                        { key: 'Bitiş KM / Saat', name: 'Bitiş KM / Saat' },
+                        { key: 'Toplam KM / Saat', name: 'Toplam KM / Saat' },
+                        { key: 'Toplam Sefer', name: 'Toplam Sefer' },
+                        { key: 'Toplam M3', name: 'Toplam M3' },
+                        { key: 'Toplam Mazot', name: 'Toplam Mazot' },
+                        { key: 'Sefer / LT', name: 'Sefer / LT' },
+                        { key: 'KM-Saat / LT', name: 'KM-Saat / LT' },
+                        { key: 'site', name: 'Şantiye' },
+                        { key: 'Gündüz Dekapaj Sefer', name: 'Gündüz Dekapaj' },
+                        { key: 'Gece Dekapaj Sefer', name: 'Gece Dekapaj' },
+                        { key: 'Gündüz Bunker Sefer', name: 'Gündüz Bunker' },
+                        { key: 'Gece Bunker Sefer', name: 'Gece Bunker' },
+                        { key: 'Gündüz Stok Sefer', name: 'Gündüz Stok' },
+                        { key: 'Gece Stok Sefer', name: 'Gece Stok' },
+                        { key: 'Gündüz Mazot', name: 'Gündüz Mazot' },
+                        { key: 'Gece Mazot', name: 'Gece Mazot' },
+                      ]; // Replace with your desired column order
+
+
+    // Convert the data to DataTables format, considering the column order and names
+    var tableData = rows.map(row => {
+
+      return columnOrder.map(column => {
+        const { key } = column;
+        if (key === 'ts') {
+          return formatDate(row[key]);
+        }else if (key === "Toplam Sefer" || key === "Toplam M3") {
+          return row[key].toFixed(2); 
+        }else {
+          return row[key];
+        }
+      });
+    });
+
+    // Define the columns and their order for DataTable, including the names
+    var columns = columnOrder.map(column => {
+      const { key, name } = column;
+      if (key === 'ts') {
+        return {
+          title: name,
+          render: formatDate // Use custom rendering for timestamp column
+        };
+      } else {
+        return {
+          title: name
+        };
+      }
+    });
+
+    // Initialize the DataTable with buttons
+    var table = $('#data-table').DataTable({
+      data: tableData,
+      columns: columns,
+      dom: '<"top"lBf>rt<"bottom"ip>', // Add the buttons container
+      buttons: [
+        'copy', 'excel', 'csv', 'pdf', 'print' // Include the desired export formats
+      ],
+      language: {
+        lengthMenu: 'Göster _MENU_'
+      }
+      //fixedHeader: true // Enable fixed headers
+    });
+    //new $.fn.dataTable.FixedHeader(table);
+    // Add the import Excel button
+  })
+  .catch(error => console.error(error));
+
+// Custom rendering function for formatting the timestamp column
+function formatDate(data, type, row) {
+  if (data instanceof Date) {
+    // Format the date as desired, using the Turkish locale
+    return data.toLocaleDateString('tr-TR', { year: 'numeric', month: 'numeric', day: 'numeric' });  //long
+  } else {
+    return data;
+  }
+}
+
+
+///////////////////////////
+
+
+
+                 
+
+                
+
+                //console.log("Start Date:", startDate);
+                //console.log("End Date:", endDate);
+                console.log("Bölge:", zoneValue);
+                console.log("Araç Tipi:", typeValue);
+                console.log("Araç:", vehicleValue);
+                console.log("Start Date (Timestamp):", startTimestamp);
+                console.log("End Date (Timestamp):", endTimestamp);
+                });
+    
+   };   
+
+
+
+
+
+
+
+
+
+
+
+
+
+{"GÜNLÜK FAALİYET":{"KAMYON"                :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}}
+                    "TIR"                   :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "YÜKLEME"               :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "ELEKTRİKLİ MAKİNE"     :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "İŞ MAKİNALARI"         :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "SAHA YARDIMCI ARAÇLARI":{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "BİNEK"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "DELGİ"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "DİĞER"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    },
+ "AYLIK FAALİYET":{"KAMYON"                :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}}
+                    "TIR"                   :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "YÜKLEME"               :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "ELEKTRİKLİ MAKİNE"     :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "İŞ MAKİNALARI"         :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "SAHA YARDIMCI ARAÇLARI":{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "BİNEK"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "DELGİ"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "DİĞER"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    },
+ "TOPLAM FAALİYET ":{"KAMYON"                :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}}
+                    "TIR"                   :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "YÜKLEME"               :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "ELEKTRİKLİ MAKİNE"     :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "İŞ MAKİNALARI"         :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "SAHA YARDIMCI ARAÇLARI":{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "BİNEK"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "DELGİ"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    "DİĞER"                 :{"DEKAPAJ"         :{"SEFER":0,"M3":0,"LT":0},
+                                              "BUNKER"          :{"SEFER":0,"M3":0,"LT":0,"TON":0},
+                                              "STOK"            :{"SEFER":0,"M3":0,"LT":0},
+                                              "TOPLAM"          :{"SEFER":0,"M3":0,"TON":0,"KM/SAAT":0,"LT":0,"KW":0},
+                                              "VERİ"            :{"LT/M3":0,"KW/M3":0,"LT/KM-SAAT":0,"LT/SEFER":0,"KM/SEFER":0,"M3/SEFER":0}},
+                    }
+
+
+}
+
+
+
+
+
+
+    </script>
+    
+
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

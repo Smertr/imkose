@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Veri Sorgulama</title>
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.0.1/css/buttons.dataTables.css">
+</head>
+<body>
+  <style>
+    #date-form {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      max-width: 500px;
+      font-family: Arial, sans-serif;
+    }
+       
+        
+    #date-form label {
+      margin-right: 10px;
+      font-size: 15px;
+    }
+    
+    #date-form input[type="date"] {
+      border: 1px solid gray;
+      border-radius: 5px;
+      padding: 5px;
+      font-size: 15px;
+      font-family: Arial, sans-serif;
+    }
+
+
+
+
+    .dropdown-label {
+      display: block;
+      margin-top: 10px;
+      font-size: 15px;
+    }
+
+    .dropdown-list {
+      font-size: 15ğx;
+      width: 200px;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    .spinner {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          border-top: 5px solid #387ED8;
+          border-right: 5px solid transparent;
+          animation: spin 1s linear infinite;
+
+       }
+
+       @keyframes spin {
+         to {
+           transform: rotate(360deg);
+         }
+       }
+
+       #data-table {
+          border-collapse: collapse;
+        }
+
+        #data-table td,
+        #data-table th {
+          border: 1px solid #ddd;
+          padding: 8px;
+        }
+
+        #data-table tr:nth-child(even) {
+          background-color: #f2f2f2;
+        }
+
+        #data-table th {
+          padding-top: 12px;
+          padding-bottom: 12px;
+          text-align: left;
+          background-color: #4CAF50;
+          color: white;
+        }
+  </style>
+</head>
+<body>
+
+
+  <!-- AWS Javascript SDKs-->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+
+
+  <!-- Add a loading spinner -->
+  <div id="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+  <h1>Lütfen Seçiniz</h1>
+
+ <label class="dropdown-label" for="firstDropdown">Şantiye Seçiniz:</label>
+  <select id="firstDropdown" style="display: none;" onchange="updateSecondDropdown()" class="dropdown-list">
+    <option value="">Şantiye</option>
+  </select>
+
+  <label class="dropdown-label" for="secondDropdown">Ekipman Tipi Seçiniz:</label>
+  <select id="secondDropdown" style="display: none;" class="dropdown-list" onchange="handleSecondDropdownChange()">
+    <option value="">-</option>
+  </select>
+  <form id="date-form" style="display: none;">
+        <label for="date">Tarih Seçiniz:</label>
+
+        <input type="date" id="start-date">
+        <input type="date" id="end-date">
+        
+        
+  </form>
+  <button id="confirm-button"style="display: none;">Sorgula</button>
+  <br>
+  <br>
+  <br>
+  <div id="table-container"></div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.0.1/js/dataTables.buttons.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.0.1/js/buttons.html5.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.0.1/js/buttons.print.js"></script>
+</body>
+
+  <script>
+      let type="all";
+      let company ="imkose"
+      let sites =[];
+      let headers = {};
+      let ekipman =[]
+      let santiye ;
+      let veri ;
+      let parameter_array
+      let columnHeaders = []
+      let rowHeaders =[]
+      let timestamp = 0;
+      let date      = "";
+      var startTimestamp;
+      var endTimestamp; 
+      let column_list =[]
+      let columnOrder = [];
+
+
+    // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
+
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+      // Show the loading spinner
+      document.getElementById('loading-spinner').style.display = 'block';
+
+      cognitoUser.getSession(function(err, session) {
+                 
+                if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              
+
+              cognitoUser.getUserAttributes(function(err, result) {
+
+                  if (err) {
+                    console.log(err);
+                    return;
+                  }
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  console.log(result);
+                  console.log(site);
+                  getHeaders()
+
+                  // Hide the loading spinner
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  document.getElementById('firstDropdown').style.display = 'block';
+                  document.getElementById('secondDropdown').style.display = 'block';
+                  // Display the date-form
+                 
+                  //updateSecondDropdown()
+
+                 
+              });
+    
+      });
+
+
+    function getHeaders() {
+      const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';
+      const url2 = `${apiEndpoint2}?site=${site}&type=${type}`;
+
+      fetch(url2)
+        .then(response => response.json())
+        .then(data => {
+          
+          console.log(data)
+          Object.keys(data).forEach(location => {
+            const locationData = data[location];
+            
+            sites.push(location)   // şantiye isimleri
+
+            if (!headers[location]) {
+              headers[location] = {};
+            }
+
+            Object.keys(locationData).forEach(vehicleType => {
+              const vehicleTypeData = locationData[vehicleType];
+
+              if (!headers[location][vehicleType]) {
+                headers[location][vehicleType] = {};
+              }
+
+              Object.keys(vehicleTypeData).forEach(headerKey => {
+                const header = vehicleTypeData[headerKey];  // nakliye, makina
+                const headerTitle = header['title'];  // Gündüz mazot, gece bunker sefer
+
+                headers[location][vehicleType][headerTitle] = header;
+              });
+            });
+          });
+
+          //console.log(sites);
+          //console.log(headers);
+          dropdownlists()
+        })
+        .catch(error => console.error(error));
+    }
+
+
+
+
+
+    function dropdownlists(){  
+          
+
+          // Populate the first dropdown list with values from the array
+          var firstDropdown = document.getElementById("firstDropdown");
+          for (var i = 0; i < sites.length; i++) {
+            var option = document.createElement("option");
+            option.value = sites[i];
+            option.text = sites[i];
+            firstDropdown.appendChild(option);
+          }
+          updateSecondDropdown()
+     }
+
+    function updateSecondDropdown() {
+          var firstDropdown = document.getElementById("firstDropdown");
+          var secondDropdown = document.getElementById("secondDropdown");
+          var selectedValue = firstDropdown.value;
+          Object.keys(headers).forEach(location => {
+            if (location ==selectedValue){
+              santiye=selectedValue;
+              ekipman = Object.keys(headers[location])
+              
+            }
+
+            
+          })
+          
+          // Clear previous options in the second dropdown
+          secondDropdown.innerHTML = '<option value="">Seçiniz</option>';
+
+          
+
+          // Populate the second dropdown with suboptions
+          for (var i = 0; i < ekipman.length; i++) {
+            var option = document.createElement("option");
+            option.value = ekipman[i];
+            option.text = ekipman[i];
+            secondDropdown.appendChild(option);
+          }
+    }
+
+    
+   function handleSecondDropdownChange() {
+      var secondDropdown = document.getElementById("secondDropdown");
+      var selectedValue = secondDropdown.value;
+      veri = selectedValue;
+      parameterArray = Object.values(headers[santiye][veri]);
+
+
+      if (veri == "NAKLİYE"){
+        columnOrder = ["ts","id","Alt Kategori","Yakıt","Gündüz Dekapaj Sefer","Gece Dekapaj Sefer","Gündüz Bunker Sefer","Gece Bunker Sefer","Gündüz Stok Sefer","Gece Stok Sefer","Başlangıç KM","Bitiş KM","Gündüz Mazot","Gece Mazot",
+          "Toplam Sefer","Toplam Yakıt","Toplam Km","Toplam M3","Toplam TON","LT / Sefer","LT / Km","LT / M3"]
+      }
+
+      else if (veri == "MAKİNA"){
+        columnOrder = ["ts","id","Alt Kategori","Yakıt","Gündüz Dekapaj Sefer","Gece Dekapaj Sefer","Gündüz Bunker Sefer","Gece Bunker Sefer","Gündüz Stok Sefer","Gece Stok Sefer","Başlangıç Saat","Bitiş Saat","Gündüz Mazot","Gece Mazot","Toplam Sefer","Toplam Yakıt","Toplam Saat","LT / Sefer","LT / Saat"]
+      }
+
+      else if (veri == "YARDIMCI MAKİNA"){
+        columnOrder = ["ts","id","Alt Kategori","Yakıt","Başlangıç Saat","Bitiş Saat","Toplam Saat","Mazot"]
+      }
+
+      else if (veri == "DİĞER SAHA ARAÇLARI"){
+        columnOrder = ["ts","id","Alt Kategori","Yakıt","Başlangıç Saat","Bitiş Saat","Toplam Saat","Mazot"]
+      }
+
+      else if (veri == "BİNEK ARAÇ"){
+        columnOrder = ["ts","id","Alt Kategori","Yakıt","Başlangıç Km","Bitiş Km","Toplam Km","Mazot"]
+      }
+
+      else if (veri == "DELİCİ"){
+        columnOrder = ["ts","id","Alt Kategori","Yakıt","Başlangıç Saat","Bitiş Saat","Toplam Saat","Mazot","Delik Metre","Delik Adedi"]
+      }
+      else if (veri == "EK YAKIT"){
+        columnOrder = ["ts","id","Alt Kategori","Yakıt","LT","Açıklama"]
+      }
+
+
+
+     
+      console.log(veri);
+      console.log(santiye);
+      getVehicles()
+      console.log("Selected option in secondDropdown: " + selectedValue);
+
+    }
+
+
+
+
+
+function getVehicles(){
+
+      const apiEndpoint3 = 'https://yax8nqvs89.execute-api.us-east-1.amazonaws.com/vehicles/get_vehicles';
+      const url3= `${apiEndpoint3}?&company=${company}&site=${santiye}&type=${veri}`;
+
+      fetch(url3)
+        .then(response => response.json())
+        .then(data => {
+
+
+          var heads = Object.keys(   Object.values(data)[0]    ) 
+          for (var i = 0; i < heads.length; i++) {
+              columnHeaders.push(heads[i])
+          }
+          //console.log(  columnHeaders    )
+
+
+          // Get table cell data
+          tableData = Object.values(data).map(obj => Object.values(obj));
+          //console.log(tableData);
+
+         document.getElementById('date-form').style.display = 'block';
+         document.getElementById('confirm-button').style.display = 'block';
+         
+         //getTime()
+          
+        })  
+        .catch(error => console.error(error));
+    }
+
+
+
+
+
+
+
+
+    let dateForm = document.getElementById('date-form');
+    let confirmButton = document.getElementById('confirm-button');
+
+    confirmButton.addEventListener("click", function(event) {
+      
+      
+      var startDate = document.getElementById('start-date').value;
+      var endDate = document.getElementById('end-date').value;
+
+      startTimestamp = new Date(startDate);
+      startTimestamp.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to zero
+      startTimestamp= startTimestamp.getTime()
+      startTimestamp = startTimestamp / 1000
+
+      endTimestamp = new Date(endDate);
+      endTimestamp.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to zero
+      endTimestamp= endTimestamp.getTime()
+      endTimestamp= endTimestamp / 1000
+
+      console.log("Start Timestamp:", startTimestamp);
+      console.log("End Timestamp:", endTimestamp);
+
+      
+      //startTimestamp = 1680296400
+      //endTimestamp   =1680296400+86400
+
+      querry_datas()
+      
+    });
+
+
+
+
+
+function querry_datas() {
+  
+
+  const apiEndpoint = 'https://vml6btsk1h.execute-api.us-east-1.amazonaws.com/daily/querry';
+  const url = `${apiEndpoint}?startdate=${startTimestamp}&enddate=${endTimestamp}&type=${veri}&site=${santiye}`;
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      console.log(data)
+      // Extract the array of objects from the fetched data
+      var querry_datas = Object.values(data);
+
+      // Create table
+      var table = document.createElement('table');
+      table.setAttribute('id', 'data-table');
+      var thead = document.createElement('thead');
+      var tbody = document.createElement('tbody');
+
+      // Create table header
+      var headerRow = document.createElement('tr');
+      columnOrder.forEach(function(key) {
+        if ((key != "type") & (key != "site") & (key != "company")){
+          var th = document.createElement('th');
+          
+          column_list.push(key)
+          if (key == "ts"){
+            th.textContent = "Tarih";
+          }else if (key == "id"){
+            th.textContent = "Plaka";
+          }else{
+            th.textContent = key;
+          }
+          
+          headerRow.appendChild(th);
+
+        }
+        
+      });
+      thead.appendChild(headerRow);
+      
+      // Create table rows
+      querry_datas.forEach(function(item) {
+       
+        
+        var dataRow = document.createElement('tr');
+        for (var i = 0; i < column_list.length; i++) {
+
+              if (column_list[i] === "ts") {
+                const timestampInSeconds = item[column_list[i]];
+                const timestampInMilliseconds = timestampInSeconds * 1000;
+                const dateObject = new Date(timestampInMilliseconds);
+
+                // Get the individual date components
+                const day = dateObject.getDate().toString().padStart(2, "0");
+                const month = (dateObject.getMonth() + 1).toString().padStart(2, "0");
+                const year = dateObject.getFullYear().toString();
+
+                const formattedDate = `${day}.${month}.${year}`;
+                item[column_list[i]] = formattedDate;
+              }
+
+
+              var td = document.createElement('td');
+              td.textContent = item[column_list[i]];
+              dataRow.appendChild(td);
+         }
+
+
+        tbody.appendChild(dataRow);
+      });
+
+      table.appendChild(thead);
+      table.appendChild(tbody);
+
+      var tableContainer = document.getElementById('table-container');
+      tableContainer.innerHTML = '';
+      tableContainer.appendChild(table);
+
+      // Initialize DataTables
+      $(document).ready(function() {
+        if ($.fn.DataTable.isDataTable('#data-table')) {
+          // Destroy the existing DataTable instance
+          $('#data-table').DataTable().destroy();
+        }
+
+        $('#data-table').DataTable({
+          pageLength: 100,
+          dom: 'Bfrtip',
+          buttons: [
+            'excel',
+            'csv',
+            'copy'
+          ],
+          language: {
+            lengthMenu: 'Göster _MENU_'
+          }
+        });
+      });
+    })
+    .catch(error => console.error(error));
+
+    
+}
+
+
+
+
+
+
+
+
+  </script>
+</body>
+</html>
+
+
+ 

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dropdown List</title>
+  <style>
+    .dropdown-label {
+      display: block;
+      margin-top: 10px;
+    }
+
+    .dropdown-list {
+      width: 200px;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    .spinner {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          border-top: 5px solid #387ED8;
+          border-right: 5px solid transparent;
+          animation: spin 1s linear infinite;
+
+       }
+
+       @keyframes spin {
+         to {
+           transform: rotate(360deg);
+         }
+       }
+
+       .data-table {
+          border-collapse: collapse;
+        }
+
+        .data-table th, .data-table td {
+          border: 1px solid #ccc;
+          padding: 8px;
+        }
+
+        .header-row {
+          background-color: #f2f2f2;
+        }
+
+        .title-row:first-child {
+          font-weight: bold
+
+  </style>
+</head>
+<body>
+  <!-- AWS Javascript SDKs-->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+
+
+  <!-- Add a loading spinner -->
+  <div id="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+  <h1>Lütfen Seçiniz</h1>
+
+ <label class="dropdown-label" for="firstDropdown">Şantiye Seçiniz:</label>
+  <select id="firstDropdown" style="display: none;" onchange="updateSecondDropdown()" class="dropdown-list">
+    <option value="">Şantiye</option>
+  </select>
+
+  <label class="dropdown-label" for="secondDropdown">Ekipman Tipi Seçiniz:</label>
+  <select id="secondDropdown" style="display: none;" class="dropdown-list" onchange="handleSecondDropdownChange()">
+    <option value="">-</option>
+  </select>
+
+  <script>
+      let type="all";
+      let sites =[];
+      let headers = {};
+      let ekipman =[]
+      let santiye ;
+      let veri ;
+      let parameter_array
+
+
+    // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
+
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+      // Show the loading spinner
+      document.getElementById('loading-spinner').style.display = 'block';
+
+      cognitoUser.getSession(function(err, session) {
+                 
+                if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              
+
+              cognitoUser.getUserAttributes(function(err, result) {
+
+                  if (err) {
+                    console.log(err);
+                    return;
+                  }
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  console.log(result);
+                  console.log(site);
+                  getHeaders()
+
+                  // Hide the loading spinner
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  document.getElementById('firstDropdown').style.display = 'block';
+                  document.getElementById('secondDropdown').style.display = 'block';
+                  // Display the date-form
+                 
+                  //updateSecondDropdown()
+
+                 
+              });
+    
+      });
+
+
+    function getHeaders() {
+      const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';
+      const url2 = `${apiEndpoint2}?site=${site}&type=${type}`;
+
+      fetch(url2)
+        .then(response => response.json())
+        .then(data => {
+          
+          
+          Object.keys(data).forEach(location => {
+            const locationData = data[location];
+            
+            sites.push(location)
+
+            if (!headers[location]) {
+              headers[location] = {};
+            }
+
+            Object.keys(locationData).forEach(vehicleType => {
+              const vehicleTypeData = locationData[vehicleType];
+
+              if (!headers[location][vehicleType]) {
+                headers[location][vehicleType] = {};
+              }
+
+              Object.keys(vehicleTypeData).forEach(headerKey => {
+                const header = vehicleTypeData[headerKey];
+                const headerTitle = header['title'];
+
+                headers[location][vehicleType][headerTitle] = header;
+              });
+            });
+          });
+
+          //console.log(sites);
+          //console.log(headers);
+          dropdownlists()
+        })
+        .catch(error => console.error(error));
+    }
+
+
+
+
+
+    function dropdownlists(){  
+          
+
+          // Populate the first dropdown list with values from the array
+          var firstDropdown = document.getElementById("firstDropdown");
+          for (var i = 0; i < sites.length; i++) {
+            var option = document.createElement("option");
+            option.value = sites[i];
+            option.text = sites[i];
+            firstDropdown.appendChild(option);
+          }
+          updateSecondDropdown()
+     }
+
+    function updateSecondDropdown() {
+          var firstDropdown = document.getElementById("firstDropdown");
+          var secondDropdown = document.getElementById("secondDropdown");
+          var selectedValue = firstDropdown.value;
+          Object.keys(headers).forEach(location => {
+            if (location ==selectedValue){
+              santiye=selectedValue;
+              ekipman = Object.keys(headers[location])
+              
+            }
+
+            
+          })
+          
+          // Clear previous options in the second dropdown
+          secondDropdown.innerHTML = '<option value="">Seçiniz</option>';
+
+          
+
+          // Populate the second dropdown with suboptions
+          for (var i = 0; i < ekipman.length; i++) {
+            var option = document.createElement("option");
+            option.value = ekipman[i];
+            option.text = ekipman[i];
+            secondDropdown.appendChild(option);
+          }
+    }
+
+    
+   function handleSecondDropdownChange() {
+      var secondDropdown = document.getElementById("secondDropdown");
+      var selectedValue = secondDropdown.value;
+      veri = selectedValue;
+      parameterArray = Object.values(headers[santiye][veri]);
+     
+      console.log(parameterArray[0]);
+      table(parameterArray);
+      console.log("Selected option in secondDropdown: " + selectedValue);
+    }
+
+    function table(parameterArray){
+      var table = document.createElement("table");
+      table.classList.add("data-table");
+
+      // Create the table headers
+      var headerRow = document.createElement("tr");
+      headerRow.classList.add("header-row");
+
+      var emptyHeaderCell = document.createElement("th");
+      headerRow.appendChild(emptyHeaderCell);
+
+      var columnHeaders = Object.keys(parameterArray[0]); // Get the keys of the first object as column headers
+
+      columnHeaders.forEach(function (columnHeader) {
+        if (columnHeader !== "title") {
+          var headerCell = document.createElement("th");
+          headerCell.textContent = columnHeader;
+          headerRow.appendChild(headerCell);
+        }
+      });
+
+      table.appendChild(headerRow);
+
+      // Create the table rows
+      parameterArray.forEach(function (parameter) {
+        var titleRow = document.createElement("tr");
+        titleRow.classList.add("title-row");
+
+        var titleCell = document.createElement("td");
+        titleCell.textContent = parameter.title;
+        titleRow.appendChild(titleCell);
+
+        columnHeaders.forEach(function (columnHeader) {
+          if (columnHeader !== "title") {
+            var dataCell = document.createElement("td");
+
+            // Create an input element for each cell
+            var inputElement = document.createElement("input");
+            inputElement.value = parameter[columnHeader];
+            if (columnHeader == "input_type"){
+                inputElement.type = "text"; 
+                inputElement.readOnly = true; 
+
+            }else{
+                inputElement.type = "number"; 
+            }
+            
+
+            // Add an event listener to the input element if needed
+            inputElement.addEventListener("change", function(event) {
+              var newValue = event.target.value;
+              // Perform any desired action with the new value
+            });
+
+            dataCell.appendChild(inputElement);
+            titleRow.appendChild(dataCell);
+          }
+        });
+
+
+        // Create the save button for each row
+        var saveButtonCell = document.createElement("td");
+        var saveButton = document.createElement("button");
+
+        saveButton.textContent = "Kaydet";
+        saveButton.addEventListener("click", function () {
+          var rowHeader = parameter.title;
+          const message = {};      
+          var rowData   = {};
+
+          var cells = titleRow.getElementsByTagName("td");
+
+          for (var i = 0; i < columnHeaders.length; i++) {
+                if (columnHeaders[i] == "title") {
+                   var columnHeader = columnHeaders[i+1];
+
+                }else{
+                  var columnHeader = columnHeaders[i];
+
+                }
+                
+                var inputElement = cells[i+1].querySelector("input");
+
+                if (inputElement) {
+                  rowData[columnHeader] = inputElement.value;
+
+                }
+              }
+          message[rowHeader] = rowData
+          const apiEndpoint = 'https://io6rdiwk2i.execute-api.us-east-1.amazonaws.com/update/update_limit';
+          const datasetParam = encodeURIComponent(JSON.stringify(message));
+          const url = `${apiEndpoint}?dataset=${datasetParam}&site=${santiye}&type=${veri}`;
+
+          var xhttp = new XMLHttpRequest();
+
+          const confirmed = confirm(`${rowHeader} parametresinin değerleri değiştirilecekitir. Emin misiniz?`);
+                                            if (confirmed) { 
+                                              xhttp.open("GET",url, true);
+                                              xhttp.send();
+                                              console.log(message)
+                                              alert("Veriler Gönderildi"); 
+                                              //console.log("Row Header:", rowHeader);
+                                              //console.log("Column Headers:", columnHeaders);
+                                              //console.log("Row Data:", rowData);
+                                            }
+          
+        });
+
+        saveButtonCell.appendChild(saveButton);
+        titleRow.appendChild(saveButtonCell);
+
+
+        table.appendChild(titleRow);
+      });
+
+
+      // Append the table to the document body
+      document.body.appendChild(table);
+    }
+
+
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+

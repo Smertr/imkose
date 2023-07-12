@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Table Example</title>
+
+
+    <style>
+
+        #date-form {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 10px;
+          padding: 10px;
+          border: 1px solid gray;
+          border-radius: 5px;
+          max-width: 300px;
+          font-family: Arial, sans-serif;
+}
+        }
+        
+        #date-form label {
+          margin-right: 10px;
+        }
+        
+        #date-form input[type="date"] {
+          border: 1px solid gray;
+          border-radius: 5px;
+          padding: 5px;
+          font-size: 20px;
+          font-family: Arial, sans-serif;
+        }
+
+
+
+
+      table {
+          
+          /*border: 1px solid #4A5669;*/
+          /*border-radius: 0px;*/
+          max-width: 75%;
+          
+        }
+
+        th, td {
+          padding: 5px;
+          text-align: center;
+          border: 1px solid #4A5669;
+
+
+        }
+
+        
+       
+        /* Style the remaining rows with alternating background colors */
+        tr:nth-child(odd) {
+          background-color: #FAFAFA;
+          color: #656666;
+        }
+
+        tr:nth-child(even) {
+          background-color: #EEC0A9;  // turuncu renk
+          color: #656666;
+        }
+
+        
+
+        /* Style the odd cells with a different background color */
+        /* Koyu renk satırlar*/
+        tr:nth-child(even) input {
+          background-color: #EEC0A9;
+
+
+        }
+
+        /* Açık renk satırlar*/
+        /* Style the even cells with a different background color */
+        tr:nth-child(odd) input {
+          background-color: #FAFAFA; 
+        }
+
+
+        input {
+          border: none;
+          padding: 5px;
+          width: 100%;
+          box-sizing: border-box;
+          font-size: 20px;
+          /*border: 1px solid gray;*/
+          
+        }
+        
+
+
+
+        /* Submit button styles */
+        .submit-btn {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #2c3e50;
+          color: white;
+          font-size: 16px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+          background-color: #34495e;
+        }
+        
+        .submit-btn:active {
+          transform: translateY(1px);
+        }
+      </style>
+    </head>
+    <body>
+      <!-- AWS Javascript SDKs-->
+      <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+       <form id="date-form">
+        <label for="date">Tarih Seçiniz:</label>
+        <input type="date" id="date-input" value="<%= today %>">
+      </form>
+      <script>
+      var type = "EK YAKIT"
+      var company = "";
+      var site    = "";
+      let rowshdm   = [];
+      let headers = ["Tanım","LT","Açıklama"];
+      let todaysData ={};
+      let row; 
+      
+
+       //console.log(rows); // Log the fetched data
+      function getTrucks(){
+        const apiEndpoint1 = 'https://3oddda3bhd.execute-api.us-east-1.amazonaws.com/gethdms/hdms';
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+
+                rowshdm = Object.keys(data)
+                console.log(rowshdm)
+                
+              
+              })
+              .catch(error => console.error(error));
+      }
+
+
+
+
+
+      // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
+
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+
+      cognitoUser.getSession(function(err, session) {
+              if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              cognitoUser.getUserAttributes(function(err, result) {
+                  if (err) {
+                    console.log(err);
+                    return;
+                  }
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  getTrucks();
+                  console.log(result);
+                 
+              });
+    
+      });
+
+
+
+      
+      
+
+      
+
+      
+
+      let dateInput = document.getElementById("date-input");
+      let timestamp = 0;
+      let date      = "";
+      
+
+      dateInput.addEventListener("change", function(event) {
+        
+
+            let dateString = event.target.value;
+            let year = dateString.substring(0, 4);
+            let month = dateString.substring(5, 7) - 1;
+            let day = dateString.substring(8, 10);
+            let selectedDate = new Date(year, month, day);
+            timestamp = selectedDate.getTime()/1000;
+            //console.log("Timestamp:", timestamp);
+            date = selectedDate;
+            //console.log(date);
+            //console.log(company);
+            //console.log(AWS.config.credentials)
+            //fetchRows(rows)
+            //console.log(rows)
+            //console.log(models)
+            //console.log(kms)
+            row = rowshdm
+            const currentDate = new Date(); // Get the current date and time
+            currentDate.setHours(0, 0, 0, 0); // Set the time to 12:00 am
+            todays_timestamp = currentDate.getTime()/1000;
+            console.log(todays_timestamp);
+
+            var button1 = document.createElement("button");
+            button1.classList.add("submit-btn"); // Add a class to the button
+            button1.innerText = "Getir"; // Add text to the button
+            document.body.appendChild(button1);
+
+
+            if (timestamp !=todays_timestamp){
+              const confirmed = confirm(`Bugünün tarihini seçmediniz. Devam Etmek istiyor musunuz?`);
+                                            if (!confirmed) { // only proceed if user confirmed
+                                             location.reload();
+                                            }else{
+                                                button1.addEventListener("click", function() {
+                                                  getKmHour()
+                                                })
+                                            }
+            }else{
+              //table(row)
+            }                     
+
+
+
+        
+      });
+    
+
+
+
+      function getKmHour(){
+        const apiEndpoint1 = 'https://bjpto6e4bb.execute-api.us-east-1.amazonaws.com/get_daily/get_daily_data';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}&timestamp=${timestamp}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                todaysData = data
+                console.log(todaysData)
+                table(row)
+
+              })
+              .catch(error => console.error(error));
+      }
+
+
+
+
+      function table(row){
+            // araç plakalarıyla tablo oluşturulur 
+            var table = document.createElement("table");
+            //table.className = "scrollable-table";
+            var thead = document.createElement("thead");
+            var tbody = document.createElement("tbody");
+
+            // Create table headers
+            var headerRow = document.createElement("tr");
+            var headerCell = document.createElement("th");
+            //headerRow.appendChild(headerCell); // Empty cell in first column
+            for (let i = 0; i < headers.length; i++) {
+              headerCell = document.createElement("th");
+              headerCell.textContent = headers[i];
+              headerRow.appendChild(headerCell);
+            }
+            thead.appendChild(headerRow);
+
+            // Create table rows
+            for (let i = 0; i < row.length; i++) {
+              var rowElement = document.createElement("tr");
+              var rowHeader = document.createElement("th");
+              rowHeader.textContent = row[i];
+              rowElement.appendChild(rowHeader);
+              for (let j = 1; j < headers.length; j++) {
+                var cellElement = document.createElement("td");
+                var inputElement = document.createElement("input");
+                if (j==1){  
+                inputElement.type = "number";
+              }else{
+                inputElement.type = "text";
+
+              }
+                inputElement.id = "r" + i + "c" + j;
+                try {
+                          console.log(     todaysData[row[i]][headers[j]]     )
+                          inputElement.value = todaysData[row[i]][headers[j]]
+                        } catch (error) {
+                          console.log("hataaaaa")
+                          //inputElement.value = 0
+                          
+                         
+                        }
+                
+                cellElement.appendChild(inputElement);
+                rowElement.appendChild(cellElement);
+              }
+              tbody.appendChild(rowElement);
+            }
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+
+            // Add CSS styles for fixed headers and scrollable table body
+            table.style.width = "100%";
+            table.style.tableLayout = "fixed";
+            thead.style.position = "sticky";
+            thead.style.top = "0";
+            tbody.style.overflow = "auto";
+            tbody.style.height = "400px"; // Adjust the height as needed
+
+            document.body.appendChild(table);
+            submitButton(row)
+
+
+      };
+
+      function submitButton(row){
+
+            //table(row); // tablo oluşturulur
+
+           // submit butonunun çalışması
+
+            var button = document.createElement("button");
+            const message={};
+            const isValidRow = []; // array to track which rows are valid or not
+            button.classList.add("submit-btn"); // Add a class to the button
+            button.innerText = "Kaydet"; // Add text to the button
+            button.addEventListener("click", function() {
+              for (let i = 0; i < row.length; i++) {
+                var column1Input = document.getElementById("r" + i + "c1");
+                var column2Input = document.getElementById("r" + i + "c2");
+                var value1 = column1Input.value.trim();
+                var value2 = column2Input.value.trim();
+
+                if (value1.length > 0) {
+
+                  if (value2.length === 0) {
+                    //alert("Please fill column 2 for row " + (i + 1));
+                    isValidRow[i] = false;
+                  } else {
+                    isValidRow[i] = true;
+                  }
+                } else {
+                  isValidRow[i] = false;
+                }
+              
+              };
+
+                for (let i = 0; i < row.length; i++) {
+                    if (isValidRow[i]) {
+                      let rowName = row[i];
+                      const rowValues = {};
+
+                      for (let j = 1; j <headers.length; j++) {
+                              let input = document.getElementById("r" + i + "c" + j);
+                                
+                                rowValues[headers[j]] = input.value;
+                              
+                        }
+               
+
+                       if (Object.keys(rowValues).length > 0) {
+                          // veri girildiğinde başlangıç km si otomatik eklenecek
+                          
+                          message[rowName] = rowValues
+                          //message.push( "id" + ":" + rowName +"data"+ ":" + rowValues) 
+                          console.log(message)
+                        }
+
+                    }
+                  }
+                console.log(Object.keys(message))
+                if (Object.keys(message) != "") { 
+                    const apiEndpoint = 'https://undpixtfr2.execute-api.us-east-1.amazonaws.com/update/hello';
+                    const datasetParam = encodeURIComponent(JSON.stringify(message));
+                    const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&company=${company}&site=${site}&type=${type}`;
+
+
+                    var xhttp = new XMLHttpRequest();
+
+                    const confirmed = confirm(`Emin misiniz?`);
+                    if (confirmed) { // only proceed if user confirmed
+                            xhttp.open("GET",url, true);
+                            xhttp.send();
+                            xhttp.onreadystatechange = function() {
+                            if (this.readyState === 4) {
+                              if (this.status === 200) {
+                                // Request completed successfully
+                                alert("LT ve Açıklama Girilimiş Veriler Gönderildi");
+                              } else {
+                                // An error occurred
+                                alert("Hata Oluştu");
+                              }
+                            }
+                          };
+                            //document.body.innerHTML = '';
+                            //window.location.href = "mainpage.html";
+                        }
+                    
+                    
+
+                    
+                }else{
+                    alert("LT veya Açıklama Girilmemiş"); 
+
+                }
+            })
+
+            document.body.appendChild(button);
+      };
+
+
+
+    
+    </script>
+  </body>
+</html>

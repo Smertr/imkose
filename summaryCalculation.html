@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Özet Veri</title>
+  <style>
+
+    /* Submit button styles */
+        .submit-btn {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #2c3e50;
+          color: white;
+          font-size: 16px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+          background-color: #34495e;
+        }
+        
+        .submit-btn:active {
+          transform: translateY(1px);
+        }
+
+
+    #date-form {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 10px;
+          padding: 10px;
+          border: 1px solid gray;
+          border-radius: 5px;
+          max-width: 300px;
+          font-family: Arial, sans-serif;
+}
+        }
+        
+        #date-form label {
+          margin-right: 10px;
+        }
+        
+        #date-form input[type="date"] {
+          border: 1px solid gray;
+          border-radius: 5px;
+          padding: 5px;
+          font-size: 20px;
+          font-family: Arial, sans-serif;
+        }
+
+
+
+    .container {
+      margin: 20px;
+    }
+
+     table {
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 5px;
+        }
+
+
+
+    table {
+          
+          /*border: 1px solid #4A5669;*/
+          /*border-radius: 0px;*/
+          width: 100%;
+        }
+
+        th, td {
+          padding: 5px;
+          text-align: center;
+          border: 1px solid #4A5669;
+
+        }
+
+  </style>
+  
+</head>
+<body>
+
+
+  <div class="container" id="date-form" style="display: none;">
+    <label for="date">Tarih Seçin:</label>
+    <input type="date" id="date" name="date" onchange="logTimestamp()">
+  </div>
+  
+  <table id="dataTable"></table>
+  <button style="display: none;" onclick="readSaveValues()">Kaydet</button>
+
+
+  <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="path/to/xlsx.full.min.js"></script>
+
+
+<!-- AWS Javascript SDKs-->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+<script>
+
+  var company = "";
+  var site    = "";
+  let timestamp=0;
+  let headers =[];
+  let sub_headers =[];
+  let row_headers =[];
+  let raw_data ={};
+
+  // Check the user info on AWS and get the details of user
+  var data = {
+    UserPoolId  : 'us-east-1_1uKtiajQH',
+    ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+  };
+
+  var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+  var cognitoUser = userPool.getCurrentUser();
+
+  cognitoUser.getSession(function(err, session) {
+          if (err) {
+            alert(err);
+            return;
+          }
+
+
+          // Add the User's Id Token to the Cognito credentials login map.
+          AWS.config.region   = 'us-east-1';
+          AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+              IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+              Logins: {
+                'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+              }
+          });
+
+          cognitoUser.getUserAttributes(function(err, result) {
+              if (err) {
+
+                console.log(err);
+                window.location.href = "login.html";
+                return;
+              }else{
+              company = result[3].getValue();
+              site    = result[2].getValue();
+              
+              console.log(result);
+              console.log(company);
+              console.log(site);
+              document.getElementById('date-form').style.display = 'block';
+              }
+             
+          });
+
+  });
+
+
+    function logTimestamp() {
+
+
+      
+      var dateInput = document.getElementById('date');
+      var selectedDate = dateInput.value;
+      
+      timestamp = new Date(selectedDate).getTime();
+      timestamp = timestamp /1000
+      timestamp = timestamp -10800;
+      
+      //timestamp = 1682802000
+      console.log(timestamp);
+      getSummary()
+    }
+
+
+
+
+
+
+    function getSummary() {
+      const apiEndpoint = 'https://277j9cg1jf.execute-api.us-east-1.amazonaws.com/calculation/summary_calculation';
+      const url = `${apiEndpoint}?site=${site}&ts=${timestamp}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          raw_data    = data;
+          var periods = Object.keys(data)
+          var details = Object.values(data)
+          console.log(raw_data)
+
+          Object.keys(details[0]).forEach(vehicleType => {
+                //console.log(vehicleType)
+                row_headers.push(vehicleType)
+                Object.keys(details[0][vehicleType]).forEach(titles => {
+                      
+                    if (vehicleType == "KAMYON"){
+                        headers.push(titles)
+
+                    }
+                
+                    //console.log(titles)
+                    var temp_sub =[]
+                    Object.keys(details[0][vehicleType][titles]).forEach(subs => {
+                        if (vehicleType == "KAMYON"){
+
+                          temp_sub.push(subs)  
+
+                        }
+                               
+                        //console.log(subs)
+
+                    }) 
+                    if (temp_sub.length >0 ){
+                    sub_headers.push(temp_sub)
+                    }
+                    Object.values(details[0][vehicleType][titles]).forEach(val => {
+                
+                        //console.log(val)
+
+                    })       
+                  
+
+                })    
+                  
+               
+                
+            
+          })
+        console.log("headers : ",headers) 
+        console.log("sub_headers : ",sub_headers) 
+        console.log("row_headers : ",row_headers) 
+        headers=["DEKAPAJ","BUNKER","STOK","TOPLAM","VERİ"]
+        sub_headers=[["SEFER","M3"],["SEFER","M3","TON"],["SEFER","M3"],["SEFER","M3","TON","KM/SAAT","LT","KW"],["LT/M3","KW/M3","LT/KM-SAAT","LT/SEFER","KM/SEFER","M3/SEFER"]]
+        row_headers =["KAMYON","TIR","YÜKLEME","ELEKTRİKLİ MAKİNE","İŞ MAKİNALARI","SAHA YARDIMCI ARAÇLARI","BİNEK","DELGİ","DİĞER","TOPLAM NAKLİYE","TOPLAM MAKİNE","TOPLAM"]
+        //createDataTable(headers, subheaders, rows, initialValue, rowHeaders)  
+        createDataTable(periods[0],headers,sub_headers,row_headers.length,0,row_headers,details[0],5)
+        createDataTable(periods[1],headers,sub_headers,row_headers.length,0,row_headers,details[1],5)
+        createDataTable(periods[2],headers,sub_headers,row_headers.length,0,row_headers,details[2],5)
+        })
+        .catch(error => console.error(error));
+    }
+
+function formatNumberWithCommas(number) {
+      return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+
+
+function createDataTable(title, headers, subheaders, rows, initialValue, rowHeaders, details, numBlankRows) {
+
+  // Add download button
+  var downloadButton = document.createElement("button");
+  downloadButton.textContent = "Download Excel";
+  downloadButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+  downloadButton.addEventListener("click", function() {
+    downloadExcel(title, headers, subheaders, rows, rowHeaders, details);
+  });
+
+  var table = document.getElementById("dataTable");
+  var thead = document.createElement("thead");
+  var tbody = document.createElement("tbody");
+
+  // Add title row
+  var titleRow = document.createElement("tr");
+  var titleHeader = document.createElement("th");
+  titleHeader.setAttribute("colspan", headers.length + 1);
+  titleHeader.textContent = title;
+  titleHeader.style.backgroundColor = "#FFB865"; // Set the desired background color
+  titleRow.appendChild(titleHeader);
+  thead.appendChild(titleRow);
+
+  // Create header row
+  var headerRow = document.createElement("tr");
+  var emptyHeader = document.createElement("th");
+  emptyHeader.textContent = "ANA BAŞLIKLAR";
+  emptyHeader.style.backgroundColor = "#AFA9A9"; // Set the desired background color
+  emptyHeader.style.borderLeft = "5px double black";
+  headerRow.appendChild(emptyHeader);
+  for (var i = 0; i < headers.length; i++) {
+    var th = document.createElement("th");
+    th.setAttribute("colspan", subheaders[i].length);
+    th.textContent = headers[i];
+    th.style.backgroundColor = "#AFA9A9"; // Set the desired background color
+
+    // Add double lines to the left and right sides of the header row
+    th.style.borderLeft = "5px double black";
+    th.style.borderRight = "5px double black";
+
+    headerRow.appendChild(th);
+  }
+  thead.appendChild(headerRow);
+
+  // Create subheader row
+  var subheaderRow = document.createElement("tr");
+  var rowHeaderLabel = document.createElement("th");
+  rowHeaderLabel.textContent = "ALT BAŞLIKLAR";
+  rowHeaderLabel.style.backgroundColor = "#D0CACA"; // Set the desired background color
+  rowHeaderLabel.style.borderLeft = "5px double black";
+  subheaderRow.appendChild(rowHeaderLabel);
+  for (var i = 0; i < headers.length; i++) {
+    for (var j = 0; j < subheaders[i].length; j++) {
+      var th = document.createElement("th");
+      th.textContent = subheaders[i][j];
+      th.style.backgroundColor = "#D0CACA"; // Set the desired background color
+
+      if (j == 0){
+        th.style.borderLeft = "5px double black";
+      }else if (j==subheaders[i].length-1){
+        th.style.borderRight = "5px double black";
+      }
+      
+      
+
+      subheaderRow.appendChild(th);
+    }
+  }
+  thead.appendChild(subheaderRow);
+
+  // Create data rows
+  for (var i = 0; i < rows; i++) {
+    var row = document.createElement("tr");
+    var rowHeader = document.createElement("th");
+    rowHeader.textContent = rowHeaders[i];
+
+    // Add double lines to the left and right sides of the row header
+    rowHeader.style.borderLeft = "5px double black";
+    rowHeader.style.borderRight = "5px double black";
+
+    if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNE") {
+      rowHeader.style.backgroundColor = "#AEC0E9"; // Set the desired background color
+    } else if (rowHeaders[i] == "TOPLAM") {
+      rowHeader.style.backgroundColor = "#BED8C9"; // Set the desired background color
+    } else if (rowHeaders[i] == "KAMYON" || rowHeaders[i] == "TIR") {
+      rowHeader.style.backgroundColor = "#FADFBA"; // Set the desired background color
+    } else if (rowHeaders[i] == "YÜKLEME" || rowHeaders[i] == "ELEKTRİKLİ MAKİNE") {
+      rowHeader.style.backgroundColor = "#FA9999"; // Set the desired background color
+    }
+
+    row.appendChild(rowHeader);
+    for (var j = 0; j < headers.length; j++) {
+      for (var k = 0; k < subheaders[j].length; k++) {
+        var td = document.createElement("td");
+        if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNE") {
+          td.style.backgroundColor = "#AEC0E9"; // Set the desired background color
+        } else if (rowHeaders[i] == "TOPLAM") {
+          td.style.backgroundColor = "#BED8C9"; // Set the desired background color
+        } else if (rowHeaders[i] == "KAMYON" || rowHeaders[i] == "TIR") {
+          td.style.backgroundColor = "#FADFBA"; // Set the desired background color
+        } else if (rowHeaders[i] == "YÜKLEME" || rowHeaders[i] == "ELEKTRİKLİ MAKİNE") {
+          td.style.backgroundColor = "#FA9999"; // Set the desired background color
+        }
+
+
+        if (k == 0){
+          td.style.borderLeft = "5px double black";
+        }else if (k==subheaders[j].length-1){
+          td.style.borderRight = "5px double black";
+        }
+
+        try {
+          //console.log(details[rowHeaders[i]][headers[j]][subheaders[j][k]])
+          td.textContent = formatNumberWithCommas(details[rowHeaders[i]][headers[j]][subheaders[j][k]]);
+        } catch (error) {
+          //console.log("hataaaaa")
+          td.textContent = 0;
+
+        }
+
+        row.appendChild(td);
+      }
+    }
+    tbody.appendChild(row);
+  }
+
+  table.appendChild(thead);
+  table.appendChild(tbody);
+  table.appendChild(document.createElement("br"));
+  table.appendChild(downloadButton);
+  // Add blank rows
+  // Add line breaks
+  for (var i = 0; i < numBlankRows; i++) {
+    table.appendChild(document.createElement("br"));
+  }
+}
+
+
+
+
+
+  function downloadExcel(title, headers, subheaders, rows, rowHeaders, details) {
+    var wb = XLSX.utils.book_new();
+
+    // Create worksheet
+    var ws = XLSX.utils.aoa_to_sheet([]);
+
+    // Add title row to worksheet
+    XLSX.utils.sheet_add_aoa(ws, [[title]], { origin: "A1" });
+
+    // Add header row to worksheet
+    var headerRow = [""]; // Empty cell for row headers
+    for (var i = 0; i < headers.length; i++) {
+        for (var j = 0; j < subheaders[i].length; j++) {
+            headerRow.push(headers[i] + " " + subheaders[i][j]);
+        }
+    }
+    XLSX.utils.sheet_add_aoa(ws, [headerRow], { origin: "A2" });
+
+    // Add data rows to worksheet
+    for (var i = 0; i < rows; i++) {
+        var dataRow = [rowHeaders[i]];
+        for (var j = 0; j < headers.length; j++) {
+            for (var k = 0; k < subheaders[j].length; k++) {
+                var value = "";
+                try {
+                    value = details[rowHeaders[i]][headers[j]][subheaders[j][k]];
+                } catch (error) {
+                    value = 0;
+                }
+                dataRow.push(value);
+            }
+        }
+        XLSX.utils.sheet_add_aoa(ws, [dataRow], { origin: "A" + (i + 3) });
+    }
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+    // Save workbook as Excel file
+    var wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    var blob = new Blob([wbout], { type: "application/octet-stream" });
+
+    // Create a download link and click it to trigger the download
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "data.xlsx";
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+
+function readSaveValues() {
+
+
+          console.log(raw_data)
+          
+          const apiEndpoint = 'https://kf002s5i0k.execute-api.us-east-1.amazonaws.com/save/save_summary';
+          const datasetParam = encodeURIComponent(JSON.stringify(raw_data));
+          const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&site=${site}`;
+
+
+          var xhttp = new XMLHttpRequest();
+          
+          const confirmed = confirm(`Emin misiniz?`);
+                                    if (confirmed) { // only proceed if user confirmed
+                                        xhttp.open("GET",url, true);
+                                        xhttp.send();
+                                        alert("Veriler Gönderildi"); 
+                                       
+                                    }
+          
+    }   
+
+
+  </script>  
+</body>
+</html>

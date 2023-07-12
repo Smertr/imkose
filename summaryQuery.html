@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Özet Veri</title>
+  <style>
+    .container {
+      margin: 20px;
+    }
+
+     table {
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 5px;
+        }
+  </style>
+  
+</head>
+<body>
+
+
+  <div class="container" id="date-form" style="display: none;">
+    <label for="date">Tarih Seçin:</label>
+    <input type="date" id="date" name="date" onchange="logTimestamp()">
+  </div>
+  
+  <table id="dataTable"></table>
+
+
+
+<!-- AWS Javascript SDKs-->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+<script>
+
+  var company = "";
+  var site    = "";
+  let timestamp=0;
+  let headers =[];
+  let sub_headers =[];
+  let row_headers =[];
+
+  // Check the user info on AWS and get the details of user
+  var data = {
+    UserPoolId  : 'us-east-1_1uKtiajQH',
+    ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+  };
+
+  var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+  var cognitoUser = userPool.getCurrentUser();
+
+  cognitoUser.getSession(function(err, session) {
+          if (err) {
+            alert(err);
+            return;
+          }
+
+
+          // Add the User's Id Token to the Cognito credentials login map.
+          AWS.config.region   = 'us-east-1';
+          AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+              IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+              Logins: {
+                'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+              }
+          });
+
+          cognitoUser.getUserAttributes(function(err, result) {
+              if (err) {
+
+                console.log(err);
+                window.location.href = "login.html";
+                return;
+              }else{
+              company = result[3].getValue();
+              site    = result[2].getValue();
+              
+              console.log(result);
+              console.log(company);
+              console.log(site);
+              document.getElementById('date-form').style.display = 'block';
+              }
+             
+          });
+
+  });
+
+
+    function logTimestamp() {
+
+
+      
+      var dateInput = document.getElementById('date');
+      var selectedDate = dateInput.value;
+      
+      timestamp = new Date(selectedDate).getTime();
+      timestamp = timestamp /1000
+      timestamp = timestamp -10800;
+      
+      //timestamp = 1682802000
+      console.log(timestamp);
+      getSummary()
+    }
+
+
+
+
+
+
+    function getSummary() {
+      const apiEndpoint = 'https://3eqsvr13qf.execute-api.us-east-1.amazonaws.com/summary_daily/summary_daily';
+      const url = `${apiEndpoint}?site=${site}&ts=${timestamp}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          var periods = Object.keys(data)
+          var details = Object.values(data)
+          Object.keys(details[0]).forEach(vehicleType => {
+                console.log(vehicleType)
+                row_headers.push(vehicleType)
+                Object.keys(details[0][vehicleType]).forEach(titles => {
+                      
+                    if (vehicleType == "KAMYON"){
+                        headers.push(titles)
+
+                    }
+                
+                    console.log(titles)
+                    var temp_sub =[]
+                    Object.keys(details[0][vehicleType][titles]).forEach(subs => {
+                        if (vehicleType == "KAMYON"){
+
+                          temp_sub.push(subs)  
+
+                        }
+                               
+                        console.log(subs)
+
+                    }) 
+                    if (temp_sub.length >0 ){
+                    sub_headers.push(temp_sub)
+                    }
+                    Object.values(details[0][vehicleType][titles]).forEach(val => {
+                
+                        console.log(val)
+
+                    })       
+                  
+
+                })    
+                  
+               
+                
+            
+          })
+        console.log("headers : ",headers) 
+        console.log("sub_headers : ",sub_headers) 
+        console.log("row_headers : ",row_headers) 
+        headers=["DEKAPAJ","BUNKER","STOK","TOPLAM","VERİ"]
+        sub_headers=[["SEFER","M3"],["SEFER","M3","TON"],["SEFER","M3"],["SEFER","M3","TON","KM/SAAT","LT","KW"],["LT/M3","KW/M3","LT/KM-SAAT","LT/SEFER","KM/SEFER","M3/SEFER"]]
+        row_headers =["KAMYON","TIR","YÜKLEME","ELEKTRİKLİ MAKİNE","İŞ MAKİNALARI","SAHA YARDIMCI ARAÇLARI","BİNEK","DELGİ","DİĞER","TOPLAM"]
+        //createDataTable(headers, subheaders, rows, initialValue, rowHeaders)  
+        createDataTable(periods[0],headers,sub_headers,row_headers.length,0,row_headers,details[0],10)
+        createDataTable(periods[1],headers,sub_headers,row_headers.length,0,row_headers,details[1],10)
+        })
+        .catch(error => {console.error(error)
+          alert("Kayıtlı Veri Bulunamamıştır");}
+          );
+    }
+
+function formatNumberWithCommas(number) {
+      return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+
+
+function createDataTable(title, headers, subheaders, rows, initialValue, rowHeaders,details,numBlankRows) {
+            var table = document.getElementById("dataTable");
+            var thead = document.createElement("thead");
+            var tbody = document.createElement("tbody");
+
+            // Add title row
+            var titleRow = document.createElement("tr");
+            var titleHeader = document.createElement("th");
+            titleHeader.setAttribute("colspan", headers.length + 1);
+            titleHeader.textContent = title;
+            titleRow.appendChild(titleHeader);
+            thead.appendChild(titleRow);
+
+            // Create header row
+            var headerRow = document.createElement("tr");
+            var emptyHeader = document.createElement("th");
+            emptyHeader.textContent = "";
+            headerRow.appendChild(emptyHeader);
+            for (var i = 0; i < headers.length; i++) {
+                var th = document.createElement("th");
+                th.setAttribute("colspan", subheaders[i].length);
+                th.textContent = headers[i];
+                headerRow.appendChild(th);
+            }
+            thead.appendChild(headerRow);
+
+            // Create subheader row
+            var subheaderRow = document.createElement("tr");
+            var rowHeaderLabel = document.createElement("th");
+            rowHeaderLabel.textContent = "Row Headers";
+            subheaderRow.appendChild(rowHeaderLabel);
+            for (var i = 0; i < headers.length; i++) {
+                for (var j = 0; j < subheaders[i].length; j++) {
+                    var th = document.createElement("th");
+                    th.textContent = subheaders[i][j];
+                    subheaderRow.appendChild(th);
+                }
+            }
+            thead.appendChild(subheaderRow);
+
+            // Create data rows
+            for (var i = 0; i < rows; i++) {
+                var row = document.createElement("tr");
+                var rowHeader = document.createElement("th");
+                rowHeader.textContent = rowHeaders[i];
+                row.appendChild(rowHeader);
+                for (var j = 0; j < headers.length; j++) {
+                    for (var k = 0; k < subheaders[j].length; k++) {
+                        var td = document.createElement("td");
+                        try {
+                          console.log(details[rowHeaders[i]][headers[j]][subheaders[j][k]] )
+                          td.textContent =   formatNumberWithCommas(details[rowHeaders[i]][headers[j]][subheaders[j][k]])
+                        } catch (error) {
+                          console.log("hataaaaa")
+                          td.textContent =   0
+                        }
+                                                
+                        
+                        //details[rowHeaders[i]][headers[j]][subheaders[j][k]]   //Math.floor(Math.random() * 100); // Generate random number 
+                        
+                        row.appendChild(td);
+                    }
+                }
+                tbody.appendChild(row);
+            }
+
+            // Add blank rows
+            // Add line breaks
+            for (var i = 0; i < numBlankRows; i++) {
+              tbody.appendChild(document.createElement("br"));
+            }
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+        }   
+
+
+
+
+  </script>  
+</body>
+</html>

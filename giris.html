@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Login Page</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {
+        background-color: #3498db;
+        font-family: Arial, sans-serif;
+      }
+      h1 {
+        color: #fff;
+        text-align: center;
+      }
+      form {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.3);
+        margin: 0 auto;
+        max-width: 300px;
+        padding: 20px;
+      }
+      label {
+        color: #555;
+        display: block;
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      input[type="text"], input[type="password"] {
+        border: none;
+        border-radius: 3px;
+        box-shadow: inset 0px 2px 3px rgba(0,0,0,0.1);
+        font-size: 16px;
+        padding: 10px;
+        width: 100%;
+      }
+      input[type="submit"] {
+        background-color: #3498db;
+        border: none;
+        border-radius: 3px;
+        color: #fff;
+        cursor: pointer;
+        font-size: 16px;
+        margin-top: 10px;
+        padding: 10px;
+        width: 100%;
+      }
+      input[type="submit"]:hover {
+        background-color: #2980b9;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Login Page</h1>
+    <form action="login.php" method="post">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password">
+      <input type="submit" id="login-button" value="Login">
+    </form>
+    
+    <!--AWS Javascript SDKs-->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+    <script>
+      const loginButton = document.getElementById('login-button');
+      loginButton.addEventListener('click', function(event) {
+        
+
+        var authenticationData = {
+          Username: document.getElementById("username").value,
+          Password: document.getElementById("password").value,
+        };
+        //console.log('Username: ' + authenticationData.Username);
+        //console.log('Password: ' + authenticationData.Password);
+
+        var authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+
+        var data = {
+          UserPoolId: 'us-east-1_1uKtiajQH',
+          ClientId: '4rigc1mv6tt9h9kn5dvf8p859f'
+        };
+
+       var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
+
+
+       var userData = {
+        Username: document.getElementById("username").value,
+        Pool: userPool,
+      };
+
+       var cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+
+
+       cognitoUser.authenticateUser(authenticationDetails, {
+        onSuccess: function (result) {
+          var accessToken = result.getAccessToken().getJwtToken();
+          if (authenticationData.Password == "adminadmin"){
+            window.location.href = "mainpageAdmin.html";
+            console.log(accessToken);
+          }else{
+            window.location.href = "mainpage.html";
+            console.log(accessToken);
+
+          }
+
+
+          
+        },
+        onFailure: function (err) {
+          //document.getElementById('lGift').src = "img/logo.png";
+          document.getElementById("text-danger1").innerHTML = err.message || JSON.stringify(err);//"Email adresi yada Şifre Hatalı!!!";
+          console.log(err.message || JSON.stringify(err));
+        },
+      });
+
+        event.preventDefault();
+        
+      });
+
+    </script>
+  </body>
+</html>
+
+
+
+
+
+

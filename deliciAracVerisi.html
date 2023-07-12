@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Kamyon Verileri</title>
+
+
+    <style>
+
+        #date-form {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 10px;
+          padding: 10px;
+          border: 1px solid gray;
+          border-radius: 5px;
+          max-width: 300px;
+          font-family: Arial, sans-serif;
+}
+        }
+        
+        #date-form label {
+          margin-right: 10px;
+        }
+        
+        #date-form input[type="date"] {
+          border: 1px solid gray;
+          border-radius: 5px;
+          padding: 5px;
+          font-size: 20px;
+          font-family: Arial, sans-serif;
+        }
+
+
+
+
+      table {
+          
+          /*border: 1px solid #4A5669;*/
+          /*border-radius: 0px;*/
+          width: 100%;
+        }
+
+        th, td {
+          padding: 5px;
+          text-align: center;
+          border: 1px solid #4A5669;
+
+        }
+
+        
+       
+        /* Style the remaining rows with alternating background colors */
+        tr:nth-child(odd) {
+          background-color: #FAFAFA;
+          color: #656666;
+        }
+
+        tr:nth-child(even) {
+          background-color: #A7C0EC;
+          color: white;
+        }
+
+        
+
+        /* Style the odd cells with a different background color */
+        /* Koyu renk satırlar*/
+        tr:nth-child(even) input {
+          background-color: #A7C0EC;
+
+
+        }
+
+        /* Açık renk satırlar*/
+        /* Style the even cells with a different background color */
+        tr:nth-child(odd) input {
+          background-color: #FAFAFA; 
+        }
+
+
+        input {
+          border: none;
+          padding: 5px;
+          width: 100%;
+          box-sizing: border-box;
+          font-size: 20px;
+          /*border: 1px solid gray;*/
+          
+        }
+        
+
+
+
+        /* Submit button styles */
+        .submit-btn {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #2c3e50;
+          color: white;
+          font-size: 16px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+          background-color: #34495e;
+        }
+        
+        .submit-btn:active {
+          transform: translateY(1px);
+        }
+
+       .spinner {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          border-top: 5px solid #387ED8;
+          border-right: 5px solid transparent;
+          animation: spin 1s linear infinite;
+
+       }
+
+       @keyframes spin {
+         to {
+           transform: rotate(360deg);
+         }
+       }
+
+
+       .red-button {
+          bdisplay: inline-block;
+          padding: 10px 20px;
+          background-color: #red;
+          color: white;
+          font-size: 16px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .green-button {
+            background-color: green;
+            color: white;
+        }
+
+      </style>
+    </head>
+    <body>
+      <!-- AWS Javascript SDKs-->
+      <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+
+
+      <!-- Add a loading spinner -->
+      <div id="loading-spinner" style="display: none;">
+        <div class="spinner"></div>
+      </div>
+
+
+       <form id="date-form" style="display: none;">
+        <label for="date">Tarih Seçiniz:</label>
+        <input type="date" id="date-input" value="<%= today %>">
+      </form>
+      <script>
+      var type = "DELİCİ"
+      var company = "";
+      var site    = "";
+      let rows   = [];
+      let row    = [];
+      let models = [];
+      let kms    = [];
+      let headers= [];
+      let headers_input= [];
+      let headers_limit_up= [];
+      let headers_limit_down= [];
+      let start_value = 0;
+      let end_value = 0;
+      let isValidRow = []; // array to track which rows are valid or not
+
+
+      let todaysData ={};
+      let timestamp = 0;
+      let date      = "";
+      
+      //let headers = ["Model","Plaka","Gündüz Dekapaj Sefer", "Gece Dekapaj Sefer", "Gündüz Bunker Sefer", "Gece Bunker Sefer","Gündüz Stok Sefer", "Gece Stok Sefer","Başlangıç KM / Saat","Bitiş KM / //Saat","Gündüz Mazot","Gece Mazot"];
+      //console.log(rows); // Log the fetched data
+      
+
+      // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
+
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+      // Show the loading spinner
+      document.getElementById('loading-spinner').style.display = 'block';
+
+      cognitoUser.getSession(function(err, session) {
+                 
+                if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              
+
+              cognitoUser.getUserAttributes(function(err, result) {
+
+                  if (err) {
+                    console.log(err);
+                    return;
+                  }
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  getHeaders()
+                  getTrucks();
+                  getTable()
+                  console.log(result);
+                  console.log(site);
+
+                  // Hide the loading spinner
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  // Display the date-form
+                  document.getElementById('date-form').style.display = 'block';
+                 
+              });
+    
+      });
+
+
+
+      
+
+      
+
+      
+
+      let dateInput = document.getElementById("date-input");
+     
+
+
+function getHeaders(){
+        const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';    
+        const url2 = `${apiEndpoint2}?site=${site}&type=${type}`;
+        fetch(url2)
+              .then(response => response.json())
+              .then(data => {
+                var data_headers = Object.values(data)
+                
+                Object.values(data_headers).forEach(params => {
+                    Object.values(params).forEach(value => {
+                      console.log(value.title)
+                     
+                        headers.push(value.title);
+                        headers_input.push(value.input_type);
+                        headers_limit_up.push(value.limit_up);
+                        headers_limit_down.push(value.limit_down);
+
+                        //console.log(value.title)
+                     
+                      })
+                    
+              });
+                
+              })
+              .catch(error => console.error(error));
+
+}
+
+
+
+function getTrucks(){
+        const apiEndpoint1 = 'https://3oddda3bhd.execute-api.us-east-1.amazonaws.com/gethdms/hdms';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                console.log(company);
+                rows = Object.keys(data);
+                Object.values(data).forEach(value => {
+                const [model, km, marka ,tip, site] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
+                models.push(marka); // add model to models array
+                kms.push(km); // add km to kms array
+                //console.log(rows);
+                });
+              })
+              .catch(error => console.error(error));
+      }
+
+
+
+
+function getKmHour(){
+        const apiEndpoint1 = 'https://bjpto6e4bb.execute-api.us-east-1.amazonaws.com/get_daily/get_daily_data';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}&timestamp=${timestamp}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                todaysData = data
+                console.log(todaysData)
+                table(row)
+
+              })
+              .catch(error => console.error(error));
+      }
+
+
+
+function getTable(){
+
+      dateInput.addEventListener("change", function(event) {
+        
+
+            let dateString = event.target.value;
+            let year = dateString.substring(0, 4);
+            let month = dateString.substring(5, 7) - 1;
+            let day = dateString.substring(8, 10);
+            let selectedDate = new Date(year, month, day);
+            timestamp = selectedDate.getTime()/1000;
+            console.log("Timestamp:", timestamp);
+            date = selectedDate;
+            row = rows
+            const currentDate = new Date(); // Get the current date and time
+            currentDate.setHours(0, 0, 0, 0); // Set the time to 12:00 am
+            todays_timestamp = currentDate.getTime()/1000;
+            console.log(todays_timestamp);
+
+
+            var button1 = document.createElement("button");
+            button1.classList.add("submit-btn"); // Add a class to the button
+            button1.innerText = "Getir"; // Add text to the button
+            document.body.appendChild(button1);
+
+
+            if (timestamp !=todays_timestamp){
+              const confirmed = confirm(`Bugünün tarihini seçmediniz. Devam Etmek istiyor musunuz?`);
+                                            if (!confirmed) { // only proceed if user confirmed
+                                             location.reload();
+                                            }else{
+                                                button1.addEventListener("click", function() {
+                                                  getKmHour()
+                                                })
+                                            }
+            }else{
+              //table(row)
+            }        
+
+
+        
+      });
+
+
+}; 
+
+
+    
+      function table(row) {
+        // araç plakalarıyla tablo oluşturulur
+        var table = document.createElement("table");
+        //table.className = "scrollable-table";
+        var thead = document.createElement("thead");
+        var tbody = document.createElement("tbody");
+
+        // Create table headers
+        var headerRow = document.createElement("tr");
+        var headerCell = document.createElement("th");
+        //headerRow.appendChild(headerCell); // Empty cell in first column
+        for (let i = 0; i < headers.length; i++) {
+          headerCell = document.createElement("th");
+          headerCell.textContent = headers[i];
+          headerRow.appendChild(headerCell);
+        }
+        thead.appendChild(headerRow);
+
+        // Create table rows
+        for (let i = 0; i < row.length; i++) {
+                  var rowElement = document.createElement("tr");
+                  var rowHeader = document.createElement("th");
+                  var rowHeader2 = document.createElement("th");
+                  
+                  rowHeader.textContent = row[i];
+                  rowHeader2.textContent = models[i];
+                  rowElement.appendChild(rowHeader2);
+                  rowElement.appendChild(rowHeader);
+                  for (let j = 2; j < headers.length; j++) {
+                    if (headers[j].includes("Başlangıç")) {
+                      start_value = j
+                    }
+                    if (headers[j].includes("Bitiş")) {
+                      end_value = j
+                    }
+                    var cellElement = document.createElement("td");
+                    var inputElement = document.createElement("input");
+                    inputElement.type = headers_input[j];
+                    //inputElement.max  = headers_limit_up[j];
+                    inputElement.id = "r" + i + "c" + j;
+                    try {
+                          console.log(     todaysData[row[i]][headers[j]]     )
+                          inputElement.value = todaysData[row[i]][headers[j]]
+                        } catch (error) {
+                          console.log("hataaaaa")
+                          //inputElement.value = 0
+                          if (j === start_value) { // if current column is the 8th column
+                            inputElement.value = kms[i]; // set the input value to the corresponding value in the kms array
+                            inputElement.readOnly = true; // make the input element read-only
+                          }
+                         
+                        }
+                    
+                    
+                   
+                    /*    
+                    
+                    */
+                    
+                    cellElement.appendChild(inputElement);
+                    rowElement.appendChild(cellElement);
+                  }
+
+                  tbody.appendChild(rowElement);
+        }
+        var inputs = tbody.getElementsByTagName("input");
+        
+        for (let i = 0; i < inputs.length; i++){
+          isValidRow.push(0)
+
+        }
+
+        // seçili verilerin limit üstü olup olmadığı kontrol edilir
+        tbody.addEventListener("click", function(event) {
+                var selectedInput = event.target;
+                
+
+                // Correct previously entered cells if value exceeds the limit
+                for (var i = 0; i < inputs.length; i++) {
+                      // Seçili hücre dışında farklı bir hücre seçildiğinde tetiklenir
+                      if (inputs[i] !== selectedInput) {
+
+                                var inputValue = parseFloat(inputs[i].value);
+                                var rowIndex = Math.floor(i / (headers.length - 2)); // Calculate the row index
+                                var columnIndex =i % (headers.length - 2) + 2 // Calculate the column index
+                                
+
+                                if (columnIndex === end_value) { // Check if it's the 9th column (index 8)
+
+                                      var value8 = parseFloat(inputs[i - 1].value); // Get the value of the input in the 8th column
+                                      if (isValidRow[i]==0) { 
+                                            if ( (inputValue-value8) > headers_limit_up[columnIndex]   ||  (inputValue-value8) < 0 ) {
+                                              //alert(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
+                                              const confirmed = confirm(`${headers[columnIndex]} verisi fazla ya da Başlangıç verisinden az girildi. Günlük limit ${headers_limit_up[columnIndex]}`);
+                                                    if (!confirmed) { // only proceed if user confirmed
+                                                      //headers_limit_up[columnIndex] = inputs[i].value - value8;
+                                                      isValidRow[i]=0
+                                                      inputs[i].value = parseFloat(headers_limit_up[columnIndex]) + value8;
+                                                    }else{
+                                                      isValidRow[i]=1
+                                                    }
+                                              
+                                            }
+                                          }
+                                }else{
+                                     if (  (inputValue > parseFloat(headers_limit_up[columnIndex])) & (isValidRow[i]==0) & (columnIndex!=start_value))   {
+                                      //console.log( rows[rowIndex] , headers[columnIndex] )
+                                      console.log(rowIndex)
+                                      console.log(columnIndex)
+                                      const confirmed = confirm(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
+                                              if (!confirmed) { // only proceed if user confirmed
+                                                //headers_limit_up[columnIndex] = inputs[i].value - value8;
+                                                isValidRow[i]=0
+                                                inputs[i].value = parseFloat(headers_limit_up[columnIndex]);
+                                              }else{
+                                                isValidRow[i]=1
+                                              }
+                                              
+                                     //inputs[i].value = headers_limit_up[columnIndex];
+                                      
+                                    }
+
+
+                                }
+
+                                
+                      }
+                }
+        });
+
+
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+
+        // Add CSS styles for fixed headers and scrollable table body
+        table.style.width = "100%";
+        table.style.tableLayout = "fixed";
+        thead.style.position = "sticky";
+        thead.style.top = "0";
+        tbody.style.overflow = "auto";
+        tbody.style.height = "400px"; // Adjust the height as needed
+
+        document.body.appendChild(table);
+        submitButton(row);
+}
+
+
+
+
+      function submitButton(row){
+
+
+
+           
+            // submit butonunun çalışması
+
+            var button = document.createElement("button");
+            const message={};
+            button.classList.add("submit-btn"); // Add a class to the button
+            button.innerText = "Kaydet"; // Add text to the button
+            button.addEventListener("click", function() {
+            console.log(isValidRow)
+               
+                for (let i = 0; i < row.length; i++) {
+                  
+                        let rowName = row[i];
+                        const rowValues = {};
+                
+                        for (let j = 2; j <headers.length; j++) {
+                              let input_v = document.getElementById("r" + i + "c" + j);
+                              if (  (input_v.value !== "") && (j!==start_value )   ){
+                                rowValues[headers[j]] = input_v.value;
+                              }
+                        }
+               
+                
+                        if (Object.keys(rowValues).length > 0) {
+                          // veri girildiğinde başlangıç km si otomatik eklenecek
+                          rowValues[headers[start_value]] = kms[i];
+                          
+                          message[rowName] = rowValues
+                          //message.push( "id" + ":" + rowName +"data"+ ":" + rowValues) 
+                         
+
+                        }
+                  
+                }
+
+                
+                
+                const apiEndpoint = 'https://undpixtfr2.execute-api.us-east-1.amazonaws.com/update/hello';
+                const datasetParam = encodeURIComponent(JSON.stringify(message));
+                const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&company=${company}&site=${site}&type=${type}`;
+
+
+                var xhttp = new XMLHttpRequest();
+                
+                const confirmed = confirm(`Emin misiniz?`);
+                    if (confirmed) { // only proceed if user confirmed
+                            xhttp.open("GET",url, true);
+                            xhttp.send();
+                            xhttp.onreadystatechange = function() {
+                            if (this.readyState === 4) {
+                              if (this.status === 200) {
+                                // Request completed successfully
+                                alert("Veriler Gönderildi");
+                              } else {
+                                // An error occurred
+                                alert("Hata Oluştu");
+                              }
+                            }
+                          };
+                            //document.body.innerHTML = '';
+                            //window.location.href = "mainpage.html";
+                        }
+                                          
+
+                
+                
+             
+               
+
+            })
+
+            document.body.appendChild(button);
+      };
+
+    </script>
+  </body>
+</html>
+
