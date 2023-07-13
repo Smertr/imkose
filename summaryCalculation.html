@@ -93,7 +93,7 @@
   </div>
   
   <table id="dataTable"></table>
-  <button style="display: none;" onclick="readSaveValues()">Kaydet</button>
+  <button id = "getButton" style="display: none;" onclick="getSummary()">GETİR</button>
 
 
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
@@ -172,12 +172,15 @@
       
       //timestamp = 1682802000
       console.log(timestamp);
-      getSummary()
+      document.getElementById('getButton').style.display = 'block';
+      getButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+
+
+      
     }
 
 
-
-
+    
 
 
     function getSummary() {
@@ -441,28 +444,6 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     URL.revokeObjectURL(link.href);
 }
 
-
-function readSaveValues() {
-
-
-          console.log(raw_data)
-          
-          const apiEndpoint = 'https://kf002s5i0k.execute-api.us-east-1.amazonaws.com/save/save_summary';
-          const datasetParam = encodeURIComponent(JSON.stringify(raw_data));
-          const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&site=${site}`;
-
-
-          var xhttp = new XMLHttpRequest();
-          
-          const confirmed = confirm(`Emin misiniz?`);
-                                    if (confirmed) { // only proceed if user confirmed
-                                        xhttp.open("GET",url, true);
-                                        xhttp.send();
-                                        alert("Veriler Gönderildi"); 
-                                       
-                                    }
-          
-    }   
 
 
   </script>  
