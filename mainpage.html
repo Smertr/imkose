@@ -22,6 +22,7 @@
         cursor: pointer;
         border-radius: 10px;
         box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+        width: 300px;
       }
     </style>
   </head>
@@ -35,8 +36,10 @@
       <button id="button6">Ek Yakıt Veri Girişi</button>
       <button id="button7">Delici Veri Girişi</button>
       <button id="button9">M3 - Ton Veri Girişi</button>
+      <button id="button8">Günlük Notlar</button>
+      <button id="button11">Saha Notları</button>
       <button id="button10">Günlük Veri Kontrolü</button>
-      <button id="button8">Kayıtlı Özet Veri Sorgulama</button>
+      
     </div>
     
      <!--AWS Javascript SDKs-->
@@ -140,7 +143,7 @@
 
       const button8 = document.getElementById('button8');
       button8.addEventListener('click', () => {
-        window.location.href = "summaryQuery.html";
+        window.location.href = "dailyNots.html";
         console.log('Button 8 clicked!');
       });
 
@@ -155,6 +158,12 @@
       button10.addEventListener('click', () => {
         window.location.href = "summaryCalculation.html";
         console.log('Button 10 clicked!');
+      });
+
+      const button11 = document.getElementById('button11');
+      button11.addEventListener('click', () => {
+        window.location.href = "sahaNotes.html";
+        console.log('Button 11 clicked!');
       });
 
 

@@ -3,19 +3,26 @@
   <head>
     <title>Three Fancy Buttons</title>
     <style>
+      .button-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
       button {
-        background-color: #2c3e50; /* Green */
+        background-color: #2c3e50;
         border: none;
         color: white;
         padding: 15px 32px;
         text-align: center;
         text-decoration: none;
-        display: inline-block;
+        display: block;
         font-size: 16px;
-        margin: 4px 2px;
+        margin-bottom: 10px;
         cursor: pointer;
         border-radius: 10px;
         box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+        width: 300px;
       }
     </style>
   </head>
@@ -24,6 +31,7 @@
     <button id="button2">Veri Sorgulama</button>
     <button id="button3">Limit Ayarlama</button>
     <button id="button4">Özet Veri Sorgulama</button>
+    <button id="button5">Güncel Şantiye Notları</button>
     
      <!--AWS Javascript SDKs-->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
@@ -100,6 +108,12 @@
       button4.addEventListener('click', () => {
         window.location.href = "adminSummaryCalculation.html";
         console.log('Button 4 clicked!');
+      });
+
+      const button5 = document.getElementById('button5');
+      button5.addEventListener('click', () => {
+        window.location.href = "lastUpdatedNotes.html";
+        console.log('Button 5 clicked!');
       });
 
 

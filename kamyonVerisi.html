@@ -419,6 +419,9 @@ function getTable(){
                     try {
                           console.log(     todaysData[row[i]][headers[j]]     )
                           inputElement.value = todaysData[row[i]][headers[j]]
+                          if ((j === end_value) || (j === start_value)) { // if current column is the 8th column
+                                inputElement.readOnly = true; // make the input element read-only
+                              }
                         } catch (error) {
                           console.log("hataaaaa")
                           //inputElement.value = 0
@@ -469,14 +472,8 @@ function getTable(){
                                       if (isValidRow[i]==0) { 
                                             if ( (inputValue-value8) > headers_limit_up[columnIndex]   ||  (inputValue-value8) < 0 ) {
                                               //alert(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
-                                              const confirmed = confirm(`${headers[columnIndex]} verisi fazla ya da Başlangıç verisinden az girildi. Günlük limit ${headers_limit_up[columnIndex]}`);
-                                                    if (!confirmed) { // only proceed if user confirmed
-                                                      //headers_limit_up[columnIndex] = inputs[i].value - value8;
-                                                      isValidRow[i]=0
-                                                      inputs[i].value = parseFloat(headers_limit_up[columnIndex]) + value8;
-                                                    }else{
-                                                      isValidRow[i]=1
-                                                    }
+                                              alert(`${headers[columnIndex]} verisi fazla ya da Başlangıç verisinden az girildi. Günlük limit ${headers_limit_up[columnIndex]}`);
+                                              inputs[i].value = "";
                                               
                                             }
                                           }
@@ -485,14 +482,9 @@ function getTable(){
                                       //console.log( rows[rowIndex] , headers[columnIndex] )
                                       console.log(rowIndex)
                                       console.log(columnIndex)
-                                      const confirmed = confirm(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
-                                              if (!confirmed) { // only proceed if user confirmed
-                                                //headers_limit_up[columnIndex] = inputs[i].value - value8;
-                                                isValidRow[i]=0
-                                                inputs[i].value = parseFloat(headers_limit_up[columnIndex]);
-                                              }else{
-                                                isValidRow[i]=1
-                                              }
+                                      alert(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
+                                      inputs[i].value = "";
+                                              
                                               
                                      //inputs[i].value = headers_limit_up[columnIndex];
                                       

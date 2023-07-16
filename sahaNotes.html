@@ -168,19 +168,14 @@
         <input type="date" id="date-input" value="<%= today %>">
       </form>
       <script>
-      var type = "DİĞER SAHA ARAÇLARI"
+      var type = "SAHA NOTLARI"
       var company = "";
       var site    = "";
-      let rows   = [];
-      let row    = [];
-      let models = [];
-      let kms    = [];
+
       let headers= [];
       let headers_input= [];
       let headers_limit_up= [];
       let headers_limit_down= [];
-      let start_value = 0;
-      let end_value = 0;
       let isValidRow = []; // array to track which rows are valid or not
 
 
@@ -188,10 +183,6 @@
       let timestamp = 0;
       let date      = "";
       
-      //let headers = ["Model","Plaka","Gündüz Dekapaj Sefer", "Gece Dekapaj Sefer", "Gündüz Bunker Sefer", "Gece Bunker Sefer","Gündüz Stok Sefer", "Gece Stok Sefer","Başlangıç KM / Saat","Bitiş KM / //Saat","Gündüz Mazot","Gece Mazot"];
-      //console.log(rows); // Log the fetched data
-      
-
       // Check the user info on AWS and get the details of user
       var data = {
         UserPoolId  : 'us-east-1_1uKtiajQH',
@@ -231,10 +222,9 @@
                   company = result[3].getValue();
                   site    = result[2].getValue();
                   getHeaders()
-                  getTrucks();
-                  getTable()
                   console.log(result);
                   console.log(site);
+                  getTable()
 
                   // Hide the loading spinner
                   document.getElementById('loading-spinner').style.display = 'none';
@@ -287,44 +277,10 @@ function getHeaders(){
 
 
 
-function getTrucks(){
-        const apiEndpoint1 = 'https://3oddda3bhd.execute-api.us-east-1.amazonaws.com/gethdms/hdms';    
-        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}`;
-        console.log(url1)
-          // araç bilgilerini getirir
-          fetch(url1)
-              .then(response => response.json())
-              .then(data => {
-                console.log(company);
-                rows = Object.keys(data);
-                Object.values(data).forEach(value => {
-                const [model, km, marka ,tip, site] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
-                models.push(model); // add model to models array
-                kms.push(km); // add km to kms array
-                //console.log(rows);
-                });
-              })
-              .catch(error => console.error(error));
-      }
 
 
 
 
-function getKmHour(){
-        const apiEndpoint1 = 'https://bjpto6e4bb.execute-api.us-east-1.amazonaws.com/get_daily/get_daily_data';    
-        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}&timestamp=${timestamp}`;
-        console.log(url1)
-          // araç bilgilerini getirir
-          fetch(url1)
-              .then(response => response.json())
-              .then(data => {
-                todaysData = data
-                console.log(todaysData)
-                table(row)
-
-              })
-              .catch(error => console.error(error));
-      }
 
 
 
@@ -341,7 +297,6 @@ function getTable(){
             timestamp = selectedDate.getTime()/1000;
             console.log("Timestamp:", timestamp);
             date = selectedDate;
-            row = rows
             const currentDate = new Date(); // Get the current date and time
             currentDate.setHours(0, 0, 0, 0); // Set the time to 12:00 am
             todays_timestamp = currentDate.getTime()/1000;
@@ -360,14 +315,12 @@ function getTable(){
                                              location.reload();
                                             }else{
                                                 button1.addEventListener("click", function() {
-                                                  getKmHour()
+                                                  table()
                                                 })
                                             }
             }else{
               //table(row)
             }        
-
-
         
       });
 
@@ -376,7 +329,7 @@ function getTable(){
 
 
     
-      function table(row) {
+      function table() {
         // araç plakalarıyla tablo oluşturulur
         var table = document.createElement("table");
         //table.className = "scrollable-table";
@@ -425,10 +378,10 @@ function getTable(){
                         } catch (error) {
                           console.log("hataaaaa")
                           //inputElement.value = 0
-                          if (j === start_value) { // if current column is the 8th column
-                            inputElement.value = kms[i]; // set the input value to the corresponding value in the kms array
-                            inputElement.readOnly = true; // make the input element read-only
-                          }
+                              if (j === start_value) { // if current column is the 8th column
+                                inputElement.value = kms[i]; // set the input value to the corresponding value in the kms array
+                                inputElement.readOnly = true; // make the input element read-only
+                              }
                          
                         }
                     
@@ -484,6 +437,7 @@ function getTable(){
                                       console.log(columnIndex)
                                       alert(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
                                       inputs[i].value = "";
+                                              
                                               
                                      //inputs[i].value = headers_limit_up[columnIndex];
                                       

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Three Fancy Buttons</title>
+    <style>
+
+      table {
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid black;
+      padding: 8px;
+
+
+    </style>
+  </head>
+  <body>
+    
+     <!--AWS Javascript SDKs-->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+    <div id="tableContainer"  class="table"></div>
+    <script>
+      var company = "";
+      var site    = "";
+      let rows ;
+      let headers;
+      let rawData;
+
+
+      // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
+
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+
+      cognitoUser.getSession(function(err, session) {
+              if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              cognitoUser.getUserAttributes(function(err, result) {
+                  if (err) {
+                    console.log(err);
+                    window.location.href = "login.html";
+                    return;
+                  }else{
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  getNotes()
+                  console.log(result);
+                  }
+                 
+              });
+    
+      });
+
+
+
+      function getNotes(){
+        const apiEndpoint1 = 'https://b0xm1d2w0m.execute-api.us-east-1.amazonaws.com/last/last_notes';    
+        const url1 = `${apiEndpoint1}?ts=${0}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                console.log(data);
+                rawData = data
+                rows = Object.keys(data);
+                headers = Object.keys(data[rows[0]]);
+
+                console.log(headers);
+                console.log(rows);
+                //console.log(Object.values(data));
+                createTable()
+              })
+              .catch(error => console.error(error));
+      }
+
+
+
+
+
+      function createTable() {
+            var tableContainer = document.getElementById('tableContainer');
+            var table = document.createElement('table');
+            var thead = document.createElement('thead');
+            var tbody = document.createElement('tbody');
+            var headerRow = document.createElement('tr');
+
+            var th = document.createElement('th');
+                th.textContent = "Araç";
+                headerRow.appendChild(th);
+
+            // Create table headers
+            for (var i = 0; i < headers.length; i++) {
+                var th = document.createElement('th');
+                th.textContent = headers[i];
+                headerRow.appendChild(th);
+            }
+
+            // Append header row to the table
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+           
+            for (var i = 0; i < rows.length; i++) {
+                var dataRow = document.createElement('tr');
+                var rowHeader = document.createElement('th');
+                rowHeader.textContent = rows[i];
+                dataRow.appendChild(rowHeader);
+                // Append table rows to the table body
+                
+                for (var j = 0; j < headers.length; j++) {
+                    var td = document.createElement('td');
+                    td.textContent = rawData[rows[i]][headers[j]];
+                  
+
+                    dataRow.appendChild(td);
+                    
+                    tbody.appendChild(dataRow);
+                }
+
+                // Append table body to the table
+                table.appendChild(tbody);
+
+                // Append the table to the table container
+                tableContainer.appendChild(table);
+            }
+            
+    }
+
+
+
+
+
+    </script>
+  </body>
+</html>
