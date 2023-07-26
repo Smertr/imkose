@@ -178,7 +178,7 @@
       let headers_limit_down= [];
       let isValidRow = []; // array to track which rows are valid or not
 
-
+      let message={};
       let todaysData ={};
       let timestamp = 0;
       let date      = "";
@@ -347,109 +347,30 @@ function getTable(){
         }
         thead.appendChild(headerRow);
 
-        // Create table rows
-        for (let i = 0; i < row.length; i++) {
-                  var rowElement = document.createElement("tr");
-                  var rowHeader = document.createElement("th");
-                  var rowHeader2 = document.createElement("th");
-                  
-                  rowHeader.textContent = row[i];
-                  rowHeader2.textContent = models[i];
-                  rowElement.appendChild(rowHeader2);
-                  rowElement.appendChild(rowHeader);
-                  for (let j = 2; j < headers.length; j++) {
-                    if (headers[j].includes("Başlangıç")) {
-                      start_value = j
-                    }
-                    if (headers[j].includes("Bitiş")) {
-                      end_value = j
-                    }
-                    var cellElement = document.createElement("td");
-                    var inputElement = document.createElement("input");
-                    inputElement.type = headers_input[j];
-                    //inputElement.max  = headers_limit_up[j];
-                    inputElement.id = "r" + i + "c" + j;
-                    try {
-                          console.log(     todaysData[row[i]][headers[j]]     )
-                          inputElement.value = todaysData[row[i]][headers[j]]
-                          if ((j === end_value) || (j === start_value)) { // if current column is the 8th column
-                                inputElement.readOnly = true; // make the input element read-only
-                              }
-                        } catch (error) {
-                          console.log("hataaaaa")
-                          //inputElement.value = 0
-                              if (j === start_value) { // if current column is the 8th column
-                                inputElement.value = kms[i]; // set the input value to the corresponding value in the kms array
-                                inputElement.readOnly = true; // make the input element read-only
-                              }
-                         
-                        }
-                    
-                    
-                   
-                    /*    
-                    
-                    */
-                    
-                    cellElement.appendChild(inputElement);
-                    rowElement.appendChild(cellElement);
-                  }
-
-                  tbody.appendChild(rowElement);
+        var rowElement = document.createElement("tr");
+        for (let j = 0; j < headers.length; j++) {
+            var cellElement = document.createElement("td");
+            var inputElement = document.createElement("input");
+            inputElement.id = "r" + 0 + "c" + j;            
+            inputElement.type = 'number'
+            inputElement.max  = headers_limit_up[j];
+            inputElement.addEventListener("input", checkInput); // Add event listener for input changes
+            console.log(headers_limit_up[j])
+            cellElement.appendChild(inputElement);
+            rowElement.appendChild(cellElement);
         }
-        var inputs = tbody.getElementsByTagName("input");
-        
-        for (let i = 0; i < inputs.length; i++){
-          isValidRow.push(0)
+        tbody.appendChild(rowElement);
 
-        }
+       function checkInput(event) {
+          var input = event.target;
+          var value = parseInt(input.value);
+          var max = parseInt(input.max);
+          if (value > max) {
+              alert("Maksimum girilebilecek değer: " + max );
+              input.value = ''; // Clear the input value
+          }
+      }
 
-        // seçili verilerin limit üstü olup olmadığı kontrol edilir
-        tbody.addEventListener("click", function(event) {
-                var selectedInput = event.target;
-                
-
-                // Correct previously entered cells if value exceeds the limit
-                for (var i = 0; i < inputs.length; i++) {
-                      // Seçili hücre dışında farklı bir hücre seçildiğinde tetiklenir
-                      if (inputs[i] !== selectedInput) {
-
-                                var inputValue = parseFloat(inputs[i].value);
-                                var rowIndex = Math.floor(i / (headers.length - 2)); // Calculate the row index
-                                var columnIndex =i % (headers.length - 2) + 2 // Calculate the column index
-                                
-
-                                if (columnIndex === end_value) { // Check if it's the 9th column (index 8)
-
-                                      var value8 = parseFloat(inputs[i - 1].value); // Get the value of the input in the 8th column
-                                      if (isValidRow[i]==0) { 
-                                            if ( (inputValue-value8) > headers_limit_up[columnIndex]   ||  (inputValue-value8) < 0 ) {
-                                              //alert(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
-                                              alert(`${headers[columnIndex]} verisi fazla ya da Başlangıç verisinden az girildi. Günlük limit ${headers_limit_up[columnIndex]}`);
-                                              inputs[i].value = "";
-                                              
-                                            }
-                                          }
-                                }else{
-                                     if (  (inputValue > parseFloat(headers_limit_up[columnIndex])) & (isValidRow[i]==0) & (columnIndex!=start_value))   {
-                                      //console.log( rows[rowIndex] , headers[columnIndex] )
-                                      console.log(rowIndex)
-                                      console.log(columnIndex)
-                                      alert(`${headers[columnIndex]} verisi fazla girildi. Üst Limit ${headers_limit_up[columnIndex]}`);
-                                      inputs[i].value = "";
-                                              
-                                              
-                                     //inputs[i].value = headers_limit_up[columnIndex];
-                                      
-                                    }
-
-
-                                }
-
-                                
-                      }
-                }
-        });
 
 
 
@@ -462,16 +383,16 @@ function getTable(){
         thead.style.position = "sticky";
         thead.style.top = "0";
         tbody.style.overflow = "auto";
-        tbody.style.height = "400px"; // Adjust the height as needed
+        tbody.style.height = "50px"; // Adjust the height as needed
 
         document.body.appendChild(table);
-        submitButton(row);
+        submitButton();
 }
 
 
 
 
-      function submitButton(row){
+      function submitButton(){
 
 
 
@@ -479,68 +400,54 @@ function getTable(){
             // submit butonunun çalışması
 
             var button = document.createElement("button");
-            const message={};
+            
             button.classList.add("submit-btn"); // Add a class to the button
             button.innerText = "Kaydet"; // Add text to the button
             button.addEventListener("click", function() {
-            console.log(isValidRow)
-               
-                for (let i = 0; i < row.length; i++) {
-                  
-                        let rowName = row[i];
-                        const rowValues = {};
-                
-                        for (let j = 2; j <headers.length; j++) {
-                              let input_v = document.getElementById("r" + i + "c" + j);
-                              if (  (input_v.value !== "") && (j!==start_value )   ){
-                                rowValues[headers[j]] = input_v.value;
-                              }
-                        }
-               
-                
-                        if (Object.keys(rowValues).length > 0) {
-                          // veri girildiğinde başlangıç km si otomatik eklenecek
-                          rowValues[headers[start_value]] = kms[i];
-                          
-                          message[rowName] = rowValues
-                          //message.push( "id" + ":" + rowName +"data"+ ":" + rowValues) 
-                         
+            for (let i = 0; i < 1; i++) {
 
-                        }
                   
+                        for (let j = 0; j <headers.length; j++) {
+                              let input_v = document.getElementById("r" + 0 + "c" + j);
+                                message[headers[j]] = input_v.value;
+                        }
+               
+                  
+
+                  console.log(message)
                 }
 
-                
-                
-                const apiEndpoint = 'https://undpixtfr2.execute-api.us-east-1.amazonaws.com/update/hello';
-                const datasetParam = encodeURIComponent(JSON.stringify(message));
-                const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&company=${company}&site=${site}&type=${type}`;
+         
+            //const apiEndpoint = 'https://zfs7reojhf.execute-api.us-east-1.amazonaws.com/update/field_values'; https://undpixtfr2.execute-api.us-east-1.amazonaws.com/update/hello
+            const apiEndpoint = 'https://zfs7reojhf.execute-api.us-east-1.amazonaws.com/update/field_values';
+            const datasetParam = encodeURIComponent(JSON.stringify(message));
+            const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&company=${company}&site=${site}&type=${type}`;
 
 
-                var xhttp = new XMLHttpRequest();
-                
-                const confirmed = confirm(`Emin misiniz?`);
-                    if (confirmed) { // only proceed if user confirmed
-                            xhttp.open("GET",url, true);
-                            xhttp.send();
-                            xhttp.onreadystatechange = function() {
-                            if (this.readyState === 4) {
-                              if (this.status === 200) {
-                                // Request completed successfully
-                                alert("Veriler Gönderildi");
-                              } else {
-                                // An error occurred
-                                alert("Hata Oluştu");
-                              }
-                            }
-                          };
-                            //document.body.innerHTML = '';
-                            //window.location.href = "mainpage.html";
+            var xhttp = new XMLHttpRequest();
+            
+            const confirmed = confirm(`Emin misiniz?`);
+                if (confirmed) { // only proceed if user confirmed
+                        xhttp.open("GET",url, true);
+                        xhttp.send();
+                        xhttp.onreadystatechange = function() {
+                        if (this.readyState === 4) {
+                          if (this.status === 200) {
+                            // Request completed successfully
+                            alert("Veriler Gönderildi");
+                          } else {
+                            // An error occurred
+                            alert("Hata Oluştu");
+                          }
                         }
-                                          
-
+                      };
+                        //document.body.innerHTML = '';
+                        //window.location.href = "mainpage.html";
+                    }
+                                      
+            
                 
-                
+             
              
                
 

@@ -230,18 +230,25 @@
             }
 
             Object.keys(locationData).forEach(vehicleType => {
-              const vehicleTypeData = locationData[vehicleType];
+              if (vehicleType != "SAHA NOTLARI"){
 
-              if (!headers[location][vehicleType]) {
-                headers[location][vehicleType] = {};
+                    const vehicleTypeData = locationData[vehicleType];
+                    
+
+                    if (!headers[location][vehicleType]) {
+                      headers[location][vehicleType] = {};
+                    }
+
+                    Object.keys(vehicleTypeData).forEach(headerKey => {
+                      const header = vehicleTypeData[headerKey];  // nakliye, makina
+                      const headerTitle = header['title'];  // Gündüz mazot, gece bunker sefer
+
+                      headers[location][vehicleType][headerTitle] = header;
+                    });
+
+
               }
 
-              Object.keys(vehicleTypeData).forEach(headerKey => {
-                const header = vehicleTypeData[headerKey];  // nakliye, makina
-                const headerTitle = header['title'];  // Gündüz mazot, gece bunker sefer
-
-                headers[location][vehicleType][headerTitle] = header;
-              });
             });
           });
 
@@ -407,11 +414,19 @@ function getVehicles(){
       console.log("Start Timestamp:", startTimestamp);
       console.log("End Timestamp:", endTimestamp);
 
+      if(endTimestamp-startTimestamp > 2678400){
+
+        alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
+      }else{
+
+        querry_datas()
+      }
+
       
       //startTimestamp = 1680296400
       //endTimestamp   =1680296400+86400
 
-      querry_datas()
+      
       
     });
 
