@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Çalışma Alanı Kontrol</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
   <style>
    
       #date-form {
@@ -57,7 +58,38 @@
         }
 
         
-        
+   /* Add this style for the loading spinner */
+#loading-spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Make sure it's above other content */
+}
+
+.spinner {
+  position: fixed;
+  top: 45%;
+  left: 45%;
+  
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border-top: 5px solid #387ed8;
+  border-right: 5px solid transparent;
+  animation: spin 1s linear infinite;
+}
+
+   @keyframes spin {
+     to {
+       transform: rotate(360deg);
+     }
+   }     
 
 
   
@@ -84,6 +116,8 @@
         <input type="date" id="end-date">        
   </form>
   <button id="confirm-button"style="display: block;">Sorgula</button>
+  <br>
+  <br>
 
 
 
@@ -160,7 +194,7 @@
 
     confirmButton.addEventListener("click", function(event) {
       
-      /*
+    
       var startDate = document.getElementById('start-date').value;
       var endDate   = document.getElementById('end-date').value;
 
@@ -177,15 +211,15 @@
 
         alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
       }else{
-
+        document.getElementById('loading-spinner').style.display = 'block';
         querry_datas()
       }
-      */
-      
+ 
+      /*
       startTimestamp = 1690848000
       endTimestamp   =11690934400
       querry_datas()
-
+      */
       
       
     });
@@ -202,24 +236,51 @@ function querry_datas() {
   fetch(url)
     .then(response => response.json())
     .then(data => {
-        //console.log(data)
-        raw_data = data
-
+      var leng = Object.keys(data).length
+        if (leng >0){
+          raw_data = data
+        
         createTableFromJson(raw_data);
+        document.getElementById('loading-spinner').style.display = 'none';
+      }else{
+        alert("Aradığınız Kiriterlerde Veri Bulunamadı!")
+        document.getElementById('loading-spinner').style.display = 'none';
+      }
+
+        
             
     })
     .catch(error => console.error(error));
+      
 
     
 }
 
 
 function createTableFromJson(raw_data) {
+
+  const existingTableContainer = document.querySelectorAll('.table, .button');
+  existingTableContainer.forEach((container) => {
+    const parentElement = container.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(container);
+    }
+  });
+    
     // Get the keys from the first object to use as column headers
+    // Add the export button
+    const exportButton = document.createElement("button");
+    exportButton.classList.add('button');
+    exportButton.textContent = "Export to Excel";
+    exportButton.addEventListener("click", function () {
+      exportToExcel(table, "table.xlsx");
+    });
+
     const columns = Object.keys(raw_data[0]);
     
     // Create the table element
     const table = document.createElement('table');
+    table.classList.add('table');
 
     // Create the table header row
     const headerRow = document.createElement('tr');
@@ -249,11 +310,18 @@ function createTableFromJson(raw_data) {
     //thead.style.position = "sticky";
 
     // Append the table to the body of the document
+    document.body.appendChild(exportButton);
     document.body.appendChild(table);
     console.log('Table created and appended to the body.');
 }
 
-
+// Function to export the table as an Excel file
+function exportToExcel(table, fileName) {
+  const ws = XLSX.utils.table_to_sheet(table);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Sheet 1");
+  XLSX.writeFile(wb, fileName);
+}
 
 
 
