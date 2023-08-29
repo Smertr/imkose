@@ -438,7 +438,7 @@
 
 function getHeaders(type){
         const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';    
-        const url2 = `${apiEndpoint2}?site=${site}?company=${company}&type=${type}`;
+        const url2 = `${apiEndpoint2}?site=${site}&company=${company}&type=${type}`;
         var array={};
         fetch(url2)
               .then(response => response.json())
@@ -636,6 +636,7 @@ function createTable(works,works2,row_id,row_id2) {
 
           if(checkIfInArray(workedVehicle,row_id[rows])){
             input.style.backgroundColor = 'lightblue';
+            /*
             if (columns[column] == "BİTİŞ"){
               input.value =  parseInt(works[row_id[rows]]) + getRandomNumber()   ////////////////////////////////////////////////////////////////////////////////////
             }
@@ -646,6 +647,7 @@ function createTable(works,works2,row_id,row_id2) {
               else if (columns[column] == "GECE MAZOT"){
                 input.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
               }
+            */
           }
 
           cell.appendChild(input);
@@ -742,6 +744,7 @@ function createTable(works,works2,row_id,row_id2) {
 
             if(checkIfInArray(workedVehicle,row_id2[rows2])){
               input2.style.backgroundColor = 'lightblue';
+              /*
               if (columns[column] == "BİTİŞ"){
                 input2.value =  parseInt(works2[row_id2[rows2]]) + getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
               }
@@ -752,7 +755,7 @@ function createTable(works,works2,row_id,row_id2) {
               else if (columns[column] == "GECE MAZOT"){
                 input2.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
               }
-                              
+              */
 
             }
 
