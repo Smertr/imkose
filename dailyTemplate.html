@@ -181,7 +181,7 @@
 
 function getHeaders(type){
         const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';    
-        const url2 = `${apiEndpoint2}?site=${site}&type=${type}`;
+        const url2 = `${apiEndpoint2}?site=${site}&type=${type}&company=${company}`;
         var array={};
         fetch(url2)
               .then(response => response.json())
