@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Çalışma Alanı</title>
+  <style>
+    /* Add some basic styling */
+    .list-container {
+
+    border: 1px solid #ccc;
+    padding: 3px;
+    border-radius: 5px;
+    margin-bottom: 10px; /* Add some margin between the dropdowns */
+    width: 200px; /* Adjust the width as needed */
+    display: flex;
+    align-items: center; /* Align items vertically in the container */
+    height: 50px;
+
+    }
+    .list-title {
+    margin-right: 8px; /* Add space between the title and the dropdown list */
+    margin-left: 8px;
+  }
+    
+
+    .list-container select {
+    height: 32px; /* Adjust the height as needed */
+    font-size: 14px; /* Adjust the font size as needed */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+  }
+
+  /* Style the dropdown options */
+  .list-container select option {
+    /* Additional styles for the dropdown options, if needed */
+  }
+
+
+    /* Add this style for the table container */
+  .table-container {
+    height: 500px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 100%;
+  }
+  /* Style for the row headers container */
+  .row-headers {
+    position: sticky;
+    left: 0;
+    top: 0;
+    background-color: #f1f1f1; /* Customize the background color */
+    z-index: 1;
+  }
+  .table-container2 {
+    height: 500px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 40%;
+
+    margin-top: 30px; /* Add a small margin between the tables */
+    margin-bottom: 30px; /* Add a small margin between the tables */
+    margin-right: 150px
+  }
+
+  .table-container3 {
+    height: 500px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 15%;
+
+    margin-top: 30px; /* Add a small margin between the tables */
+    margin-bottom: 30px; /* Add a small margin between the tables */
+  }
+
+  /* Add this style for the table header cells */
+  table th {
+    position: sticky;
+    top: 0;
+    background-color: #f1f1f1; /* Customize the background color as needed */
+    width: 10%;
+
+  }
+  tr:nth-child(even) input {
+          background-color: #A7C0EC;
+  }
+
+  
+  
+
+  /* Adjust the width of the row headers */
+
+
+  /* Submit button styles */
+  .submit-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #2c3e50;
+    color: white;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .submit-btn:hover {
+    background-color: #34495e;
+  }
+  
+  .submit-btn:active {
+    transform: translateY(1px);
+  }
+
+  
+  </style>
+</head>
+<body>
+
+<!-- AWS JavaScript SDKs -->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+<script>
+  var type = "";
+  var company = "";
+  var site = "";
+  var rawData;
+  var kamyonlar;
+  var kamyon_id;
+  var kamyon_type;
+  var makinalar;
+  var columnTotalsObject = {};
+  var rowTotals = {};
+  var message ={};
+  var savedJsonObject ={};
+  var selectedShift = ""; // Global variable to store the selected shift
+  var selectedMaterial = ""; // Global variable to store the selected material
+  var nakliyeLimits;
+  var limits;
+
+  // Check the user info on AWS and get the details of the user
+  var data = {
+    UserPoolId: 'us-east-1_1uKtiajQH',
+    ClientId: '4rigc1mv6tt9h9kn5dvf8p859f'
+  };
+
+  var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
+  var cognitoUser = userPool.getCurrentUser();
+
+  cognitoUser.getSession(function (err, session) {
+    if (err) {
+      alert(err);
+      return;
+    }
+
+    // Add the User's Id Token to the Cognito credentials login map.
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',
+      Logins: {
+        'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()
+      }
+    });
+
+    cognitoUser.getUserAttributes(function (err, result) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      company = result[3].getValue();
+      site = result[2].getValue();
+      console.log(result);
+      console.log(site);
+      getMetaData();
+      nakliyeLimits = getHeaders("NAKLİYE")
+      console.log("nakliyeLimits:     ",  nakliyeLimits)
+      // Hide the loading spinner
+    });
+
+  });
+
+
+
+
+function getHeaders(type){
+        const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';    
+        const url2 = `${apiEndpoint2}?site=${site}&type=${type}`;
+        var array={};
+        fetch(url2)
+              .then(response => response.json())
+              .then(data => {
+                var data_headers = Object.values(data)
+                
+                Object.values(data_headers).forEach(params => {
+                    Object.values(params).forEach(value => {
+                      console.log(value.title)
+                        /*
+                        headers.push(value.title);
+                        headers_input.push(value.input_type);
+                        headers_limit_up.push(value.limit_up);
+                        headers_limit_down.push(value.limit_down);
+                        */
+                        array[value.title] = value.limit_up
+
+                        //console.log(value.title)
+                     
+                      })
+                    
+              });
+                
+              })
+              .catch(error => console.error(error));
+              return array
+
+}
+
+
+
+
+  function getMetaData() {
+    const apiEndpoint = 'https://sxl4s33mtd.execute-api.us-east-1.amazonaws.com/get_meta/get_metadata';
+    const url = `${apiEndpoint}?site=${site}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        rawData = data[0];
+        kamyonlar = data[1];
+        makinalar = data[2];
+        kamyon_id = Object.keys(kamyonlar)
+        kamyon_type = Object.values(kamyonlar)
+        console.log(rawData);
+        console.log(Object.values(rawData.shifts).length);
+
+        
+        console.log(kamyonlar);
+        console.log(makinalar);
+        console.log(kamyon_id);
+        console.log(kamyon_type);
+        
+
+        checkData()
+
+        // Create Shifts Dropdown
+        createDropdownList(rawData.shifts, 'shiftDropdown', handleShiftSelection, 'Vardiya');
+
+        // Create Materials Dropdown
+        createDropdownList(rawData.materials, 'materialDropdown', handleMaterialSelection, 'Malzeme');
+      })
+      .catch(error => console.error(error));
+  }
+
+
+
+
+
+  function checkData(){
+    for (var i =0; i < Object.values(rawData.shifts).length; i++) {
+      for (var j =0; j < Object.values(rawData.materials).length; j++){
+        var a = Object.values(rawData.shifts)[i]
+        var b = Object.values(rawData.materials)[j]
+        var savedDataTitle = a+","+b
+        console.log(savedDataTitle)
+        const savedJsonString = localStorage.getItem(savedDataTitle);
+
+        if (savedJsonString) {
+          const confirmed = confirm(`${savedDataTitle} Seçeneğinde kayıtlı veri var, silmek ister misiniz?`);
+          if (confirmed) {
+            deleteJsonObject(savedDataTitle)
+          }else{
+            //console.log('No saved data found.');
+          }
+        } else {
+          console.log('No saved data found.');
+        }
+
+
+      }
+    } 
+
+    
+
+  }
+
+
+
+  function createDropdownList(items, dropdownId, changeEventHandler, title) {
+    const listContainer = document.createElement('div');
+    listContainer.classList.add('list-container');
+
+    // Add title for the list
+    const listTitle = document.createElement('h3');
+    listTitle.textContent = title;
+    listTitle.classList.add('list-title'); // Apply the .list-title class
+    listContainer.appendChild(listTitle);
+
+    // Create the dropdown list
+    const dropdown = document.createElement('select');
+    dropdown.id = dropdownId;
+
+    // Add a default blank option
+    const defaultOption = document.createElement('option');
+    defaultOption.textContent = "Seçiniz...";
+    dropdown.appendChild(defaultOption);
+
+    for (const key in items) {
+      if (items.hasOwnProperty(key)) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = items[key];
+        dropdown.appendChild(option);
+      }
+    }
+
+    // Add event listener to the dropdown list
+    dropdown.addEventListener('change', changeEventHandler);
+
+    // Append the dropdown to the container
+    listContainer.appendChild(dropdown);
+
+    // Append the container to the body
+    document.body.appendChild(listContainer);
+  }
+
+
+
+
+  function handleShiftSelection(event) {
+  const selectedKey = event.target.value;
+  const selectedValue = rawData.shifts[selectedKey];
+  selectedShift = selectedValue;
+  console.log("Selected Shift: " + selectedShift);
+  //uploadJsonObject(); // Upload the JSON object if necessary
+  //createTable(); // Always call createTable() when material is selected
+  checkSelected()
+  getLimits()
+}
+
+function handleMaterialSelection(event) {
+  const selectedKey = event.target.value;
+  const selectedValue = rawData.materials[selectedKey];
+  selectedMaterial = selectedValue;
+  console.log("Selected Material: " + selectedMaterial);
+  
+  //uploadJsonObject(); // Upload the JSON object if necessary
+  //createTable(); // Always call createTable() when material is selected
+  checkSelected()
+  getLimits()
+}
+function checkSelected(){
+  if (selectedMaterial != "" && selectedShift != ""){
+      uploadJsonObject(); // Upload the JSON object if necessary
+      createTable(); // Always call createTable() when material is selected
+  }
+}
+
+function getLimits(){
+
+  if ((selectedShift != "") &&  (selectedMaterial != "")){
+    var limit = selectedShift + " " + selectedMaterial;
+
+    limits = nakliyeLimits[limit]
+
+  }
+  console.log("limits:      ",limits)
+}
+
+
+
+function getTableValues(){
+
+  const table = document.querySelector('table');
+  const rows = table.getElementsByTagName('tr');
+
+  
+
+  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
+    const cells = rows[i].getElementsByTagName('td');
+    const rowHeader = rows[i].getElementsByTagName('th')[0].textContent;
+    temp ={}
+    for (let j = 0; j < cells.length; j++) {
+      const cellValue = parseInt(cells[j].querySelector('input').value);
+      if (!isNaN(cellValue)) {
+        temp[makinalar[j]] =cellValue
+        //temp[makinalar] += cellValue
+      }
+    }
+
+    if (Object.keys(temp).length >0){
+
+      message[rowHeader] = temp; // Use the row header as the key instead of "row" + i
+    }
+    
+  }
+
+  console.log(message); // Display row totals with row header names in the console as a JSON object
+
+}
+
+
+
+
+
+function calculateRowTotals() {
+  const table = document.querySelector('table');
+  const rows = table.getElementsByTagName('tr');
+  
+
+  
+  var totals = 0;
+  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
+    const cells = rows[i].getElementsByTagName('td');
+    let rowTotal = 0;
+
+    for (let j = 0; j < cells.length; j++) {
+      const cellValue = parseInt(cells[j].querySelector('input').value);
+      if (!isNaN(cellValue)) {     
+        rowTotal += cellValue;
+        totals += cellValue
+      }
+
+    }
+
+    const rowHeader = rows[i].getElementsByTagName('th')[0].textContent;
+    if (rowTotal>0){
+      rowTotals[rowHeader] = rowTotal; // Use the row header as the key instead of "row" + i
+
+    }else {
+      delete rowTotals[rowHeader]; // Remove the row header if the row total is 0
+    }
+    
+  }
+
+  rowTotals["TOPLAM"] = totals
+  console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
+}
+
+
+
+
+
+function calculateColumnTotals() {
+  const table = document.querySelector('table');
+  const rows = table.getElementsByTagName('tr');
+  const headerCells = rows[0].getElementsByTagName('th');
+  const numColumns = headerCells.length - 1; // Subtract 1 to exclude the first header cell
+
+  const columnTotals = Array(numColumns).fill(0);
+  const tırTotals = Array(numColumns).fill(0);
+  const kamyonTotals = Array(numColumns).fill(0);
+
+  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
+    const cells = rows[i].getElementsByTagName('td');
+    var plaka = rows[i].textContent
+    var tip = kamyonlar[rows[i].textContent]
+    //console.log("celss: ",plaka, "  ", tip)
+
+    for (let j = 0; j < cells.length; j++) {
+      const cellValue = parseInt(cells[j].querySelector('input').value);
+      if (!isNaN(cellValue)) {
+
+            if (tip == "KAMYON"){
+              kamyonTotals[j] += cellValue;
+            }else{
+              tırTotals[j] += cellValue;
+            }
+
+
+
+        columnTotals[j] += cellValue;
+      }
+    }
+  }
+
+  const columnHeaderNames = [];
+  for (let j = 0; j < numColumns; j++) {
+    columnHeaderNames.push(headerCells[j + 1].textContent); // Start from index 1 to exclude the first header cell
+  }
+  var total_temp ={}
+  total_temp["toplam"]  = 0
+  total_temp["kamyon"]  = 0
+  total_temp["tır"]     = 0
+
+
+  columnHeaderNames.forEach((name, index) => {
+    var temp ={}
+    temp["toplam"]  = columnTotals[index]
+    temp["kamyon"]  = kamyonTotals[index]
+    temp["tır"]     = tırTotals[index]
+
+    total_temp["toplam"]  += columnTotals[index]
+    total_temp["kamyon"]  += kamyonTotals[index]
+    total_temp["tır"]     += tırTotals[index]
+
+    //columnTotalsObject[name] = columnTotals[index];
+    if (temp["toplam"] >0){
+      columnTotalsObject[name] = temp;
+
+    }else{
+      delete columnTotalsObject[name]; // Remove the row header if the row total is 0
+    }
+    
+  });
+
+  columnTotalsObject["TOPLAM"] = total_temp;
+  console.log("toplam: " , columnTotalsObject["TOPLAM"])
+  //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
+  
+}
+
+
+
+
+
+
+
+
+function createTable() {
+  // Check if the table container already exists
+  const existingTableContainer = document.querySelectorAll('.table-container, .table-container2, .table-container3');
+  existingTableContainer.forEach((container) => {
+    const parentElement = container.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(container);
+    }
+    columnTotalsObject ={}
+    rowTotals ={}
+    message ={}
+
+  });
+
+
+
+
+  const tableContainer = document.createElement('div');
+  tableContainer.classList.add('table-container');
+
+  const headerRowContainer = document.createElement('div');
+  //headerRowContainer.classList.add('header-row-container');
+
+  // Create the table
+  const table = document.createElement('table');
+
+  // Create the table header row
+  const headerRow = document.createElement('tr');
+  const headerCell = document.createElement('th');
+
+  headerCell.textContent = 'ARAÇLAR';
+  headerCell.style.textAlign = 'left';
+  headerRow.appendChild(headerCell); // An empty header cell in the top-left corner
+  for (const makinaName in makinalar) {
+    if (makinalar.hasOwnProperty(makinaName)) {
+      const headerCell = document.createElement('th');
+      headerCell.textContent = makinalar[makinaName];
+      headerCell.style.width = '50px';
+      headerRow.appendChild(headerCell);
+
+    }
+  }
+  table.appendChild(headerRow);
+
+  // Create rows and input cells
+  for (const kamyonName in kamyon_id) {
+    if (kamyon_id.hasOwnProperty(kamyonName)) {
+      const row = document.createElement('tr');
+      const rowHeaderCell = document.createElement('th');
+      rowHeaderCell.textContent = kamyon_id[kamyonName];
+      rowHeaderCell.style.textAlign = 'left';
+      rowHeaderCell.classList.add('row-headers'); // Add the class 'row-header'
+      //rowHeaderCell.style.width = '1000px';
+      row.appendChild(rowHeaderCell);
+
+      for (const makinaName in makinalar) {
+        if (makinalar.hasOwnProperty(makinaName)) {
+          const cell = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.style.width = '50px';
+          input.addEventListener('blur', function () {
+                  const enteredValue = parseFloat(input.value) || 0;
+                  if (enteredValue > limits) {
+                      alert(`Günlük limit: ${limits} `);
+                      input.value = '';
+                  }
+              });
+          try{
+            input.value = savedJsonObject[kamyon_id[kamyonName]][makinalar[makinaName]]
+            input.style.color = 'black';
+            input.style.fontWeight = 'bold';
+            input.style.backgroundColor = 'lightblue';
+          }catch{
+            console.log("veri yok")
+          }
+          
+          input.addEventListener('input', createSummary);
+          cell.appendChild(input);
+          row.appendChild(cell);
+        }
+      }
+
+      table.appendChild(row);
+    }
+  }
+  
+
+  tableContainer.appendChild(table);
+  //document.body.appendChild(headerRowContainer);
+  document.body.appendChild(tableContainer);
+
+
+  
+
+}
+
+
+
+
+
+
+
+
+
+function createSummary(){
+
+  calculateRowTotals();
+  calculateColumnTotals();
+
+
+  // Remove all existing .table-container2 elements from the document.body
+  const existingTableContainers = document.querySelectorAll('.table-container2, .table-container3');
+  existingTableContainers.forEach((container) => {
+    const parentElement = container.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(container);
+    }
+  });
+  
+
+
+  var columnHeaders = Object.keys(  Object.values(columnTotalsObject)[0] ) 
+  var rowHeaders   = Object.keys(columnTotalsObject)
+  //console.log(columnHeaders)
+  console.log(rowHeaders)
+
+
+  
+  const tableContainer2= document.createElement('div');
+  tableContainer2.classList.add('table-container2');
+
+  const headerRowContainer = document.createElement('div');
+  headerRowContainer.classList.add('header-row-container');
+
+  // Create the table
+  const table = document.createElement('table');
+
+  // Create the table header row
+  const headerRow = document.createElement('tr');
+  const headerCell = document.createElement('th');
+  headerRow.appendChild(headerCell); // An empty header cell in the top-left corner
+  
+
+
+  
+  for (const columns in columnHeaders) {
+    
+      const headerCell = document.createElement('th');
+      headerCell.textContent = columnHeaders[columns];
+      headerRow.appendChild(headerCell);
+    
+  }
+
+  table.appendChild(headerRow);
+
+  // Create rows and input cells
+  for (const makinaName in rowHeaders) {
+      const row = document.createElement('tr');
+      const rowHeaderCell = document.createElement('th');
+      rowHeaderCell.textContent = rowHeaders[makinaName];
+      rowHeaderCell.style.textAlign = 'left';
+      var hdm = rowHeaders[makinaName]
+      //console.log("hdm: ",hdm)
+      row.appendChild(rowHeaderCell);
+
+      for (const columns in columnHeaders) {
+          var title = columnHeaders[columns]
+          const cell = document.createElement('td');
+          const input = document.createElement('input');
+          //input.type = 'number';
+          input.readOnly = true; // make the input element read-only
+          input.value = columnTotalsObject[hdm][title]
+          cell.appendChild(input);
+          row.appendChild(cell);
+          //console.log("title = " , )
+      }
+
+      table.appendChild(row);
+  }
+  
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  var columnHeaders3 = ["TOPLAM"]
+  var rowHeaders3    = Object.keys(rowTotals)
+  //console.log(columnHeaders)
+  console.log("rowTotals:  ",rowTotals)
+  
+  const tableContainer3= document.createElement('div');
+  tableContainer3.classList.add('table-container3');
+
+  const headerRowContainer3 = document.createElement('div');
+  headerRowContainer3.classList.add('header-row-container');
+
+  // Create the table
+  const table3 = document.createElement('table');
+
+  // Create the table header row
+  const headerRow3 = document.createElement('tr');
+  const headerCell3 = document.createElement('th');
+  headerRow3.appendChild(headerCell3); // An empty header cell in the top-left corner
+  
+
+    
+  var headerCell4 = document.createElement('th');
+  headerCell4.textContent = "TOPLAM";
+  headerRow3.appendChild(headerCell4);
+    
+
+  
+
+
+
+  table3.appendChild(headerRow3);
+
+
+
+ // Create rows and input cells
+  for (var i =0; i < rowHeaders3.length; i++) {
+      const row = document.createElement('tr');
+      const rowHeaderCell3 = document.createElement('th');
+      rowHeaderCell3.textContent = Object.keys(rowTotals)[i];
+      rowHeaderCell3.style.textAlign = 'left';
+      row.appendChild(rowHeaderCell3);
+
+
+
+
+          const cell = document.createElement('td');
+          const input = document.createElement('input');
+          //input.type = 'number';
+          input.readOnly = true; // make the input element read-only
+          input.value = Object.values(rowTotals)[i]
+          cell.appendChild(input);
+          row.appendChild(cell);
+
+
+
+
+      table3.appendChild(row);
+  }
+  
+
+
+
+
+  tableContainer2.appendChild(table);
+  tableContainer3.appendChild(table3);
+
+
+  const flexContainer = document.createElement('div');
+  flexContainer.style.display = 'flex';
+  flexContainer.appendChild(tableContainer2);
+  flexContainer.appendChild(tableContainer3);
+
+  document.body.appendChild(flexContainer);
+
+
+
+  // Add submit button
+  var submitButton = document.createElement("button");
+  submitButton.textContent = "Taslağı Kaydet";
+  submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+  submitButton.addEventListener("click", function() {
+    console.log("basıldı")
+    //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
+    //console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
+    getTableValues()
+    saveJsonObject()
+
+    //post_data()
+  });
+  const existingButton = document.querySelector('button');
+  if (!existingButton){
+    document.body.appendChild(submitButton);
+
+  }
+
+  
+}
+
+
+function saveJsonObject(){
+    var saved = selectedShift+","+selectedMaterial
+    // Save JSON object to local storage
+    localStorage.setItem(saved, JSON.stringify(message));
+    alert("mesaj kaydedildi")
+    console.log("savessss:     ",saved)
+
+}
+
+
+
+function uploadJsonObject(){
+    var saved = selectedShift+","+selectedMaterial
+    // Retrieve JSON object from local storage
+    const savedJsonString = localStorage.getItem(saved);
+    if (savedJsonString) {
+      savedJsonObject = JSON.parse(savedJsonString);
+      console.log(savedJsonObject); // This will log the retrieved JSON object
+      const confirmed = confirm(`Seçilen alanda kayıtlı veri var! Silmek istermisiniz`);
+      if (confirmed) {
+        deleteJsonObject(saved)
+      }else{
+        console.log(savedJsonObject)
+      }
+    } else {
+      console.log('No saved data found.');
+    }
+}
+
+
+function deleteJsonObject(key) {
+  localStorage.removeItem(key);
+  console.log(`Deleted JSON object with key: ${key}`);
+}
+
+
+
+
+/*
+
+function post_data(){
+
+
+    const apiEndpoint = 'https://hn9c4zcow2.execute-api.us-east-1.amazonaws.com/post_data/template_data';
+    const datasetParam = encodeURIComponent(JSON.stringify(message));
+    const url = `${apiEndpoint}?shift=${selectedShift}&material=${selectedMaterial}&dataset=${datasetParam}&company=${company}&site=${site}`;
+
+
+    var xhttp = new XMLHttpRequest();
+    
+    const confirmed = confirm(`Emin misiniz?`);
+        if (confirmed) { // only proceed if user confirmed
+                xhttp.open("GET",url, true);
+                xhttp.send();
+                xhttp.onreadystatechange = function() {
+                if (this.readyState === 4) {
+                  if (this.status === 200) {
+                    // Request completed successfully
+                    alert("Veriler Gönderildi");
+                  } else {
+                    // An error occurred
+                    alert("Hata Oluştu");
+                  }
+                }
+              };
+                //document.body.innerHTML = '';
+                //window.location.href = "mainpage.html";
+            }
+                              
+}
+*/
+
+
+</script>
+</body>
+</html>

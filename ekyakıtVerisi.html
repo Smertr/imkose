@@ -44,9 +44,11 @@
         }
 
         th, td {
-          padding: 5px;
+          padding: 10px;
           text-align: center;
           border: 1px solid #4A5669;
+          
+
 
 
         }
@@ -57,11 +59,13 @@
         tr:nth-child(odd) {
           background-color: #FAFAFA;
           color: #656666;
+          
         }
 
         tr:nth-child(even) {
           background-color: #EEC0A9;  // turuncu renk
           color: #656666;
+          
         }
 
         
@@ -113,6 +117,39 @@
         .submit-btn:active {
           transform: translateY(1px);
         }
+
+
+        #loading-spinner {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999; /* Make sure it's above other content */
+        }
+
+        .spinner {
+          position: fixed;
+          top: 45%;
+          left: 45%;
+          
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          border-top: 5px solid #387ed8;
+          border-right: 5px solid transparent;
+          animation: spin 1s linear infinite;
+        }
+
+           @keyframes spin {
+             to {
+               transform: rotate(360deg);
+             }
+           }
       </style>
     </head>
     <body>
@@ -123,14 +160,20 @@
         <label for="date">Tarih Seçiniz:</label>
         <input type="date" id="date-input" value="<%= today %>">
       </form>
+      <!-- Add a loading spinner -->
+      <div id="loading-spinner" style="display: none;">
+        <div class="spinner"></div>
+      </div>
       <script>
       var type = "EK YAKIT"
       var company = "";
       var site    = "";
       let rowshdm   = [];
-      let headers = ["Tanım","LT","Açıklama"];
+      //let headers = ["Tanım","LT","Açıklama"];
       let todaysData ={};
       let row; 
+      let headers= [];
+      
       
 
        //console.log(rows); // Log the fetched data
@@ -188,6 +231,7 @@
                   company = result[3].getValue();
                   site    = result[2].getValue();
                   getTrucks();
+                  getHeaders()
                   console.log(result);
                  
               });
@@ -198,6 +242,35 @@
 
       
       
+function getHeaders(){
+        const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';    
+        const url2 = `${apiEndpoint2}?site=${site}&company=${company}&type=${type}`;
+        fetch(url2)
+              .then(response => response.json())
+              .then(data => {
+                var data_headers = Object.values(data)
+                
+                Object.values(data_headers).forEach(params => {
+                    Object.values(params).forEach(value => {
+                      console.log(value.title)
+                     
+                        headers.push(value.title);
+                        //headers_input.push(value.input_type);
+                        //headers_limit_up.push(value.limit_up);
+                        //headers_limit_down.push(value.limit_down);
+
+                        //console.log(headers)
+                     
+                      })
+                    
+              });
+                console.log(headers)
+                     
+                
+              })
+              .catch(error => console.error(error));
+
+}
 
       
 
@@ -212,25 +285,27 @@
         
 
             let dateString = event.target.value;
+            const [year, month, day] = dateString.split('-').map(Number);
+            const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+            timestamp = chosenUTC/1000
+            /*
+            console.log("dateString:    ",dateString)
             let year = dateString.substring(0, 4);
             let month = dateString.substring(5, 7) - 1;
             let day = dateString.substring(8, 10);
             let selectedDate = new Date(year, month, day);
             timestamp = selectedDate.getTime()/1000;
-            //console.log("Timestamp:", timestamp);
-            date = selectedDate;
-            //console.log(date);
-            //console.log(company);
-            //console.log(AWS.config.credentials)
-            //fetchRows(rows)
-            //console.log(rows)
-            //console.log(models)
-            //console.log(kms)
-            row = rowshdm
+            */
+            console.log("Timestamp:", timestamp);
+            date = timestamp;
             const currentDate = new Date(); // Get the current date and time
-            currentDate.setHours(0, 0, 0, 0); // Set the time to 12:00 am
+            currentDate.setUTCHours(0, 0, 0, 0); // Set the time to 12:00 am
             todays_timestamp = currentDate.getTime()/1000;
-            console.log(todays_timestamp);
+            console.log("todays_timestamp:    ",todays_timestamp);
+
+
+            row = rowshdm
+
 
             var button1 = document.createElement("button");
             button1.classList.add("submit-btn"); // Add a class to the button
@@ -260,8 +335,8 @@
 
 
       function getKmHour(){
-        const apiEndpoint1 = 'https://bjpto6e4bb.execute-api.us-east-1.amazonaws.com/get_daily/get_daily_data';    
-        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}&timestamp=${timestamp}`;
+        const apiEndpoint1 = 'https://2a8j7nfwb5.execute-api.us-east-1.amazonaws.com/daily_data/get_daily_data';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}&start_ts=${timestamp}&end_ts=${timestamp}`;
         console.log(url1)
           // araç bilgilerini getirir
           fetch(url1)
@@ -337,7 +412,7 @@
             thead.style.position = "sticky";
             thead.style.top = "0";
             tbody.style.overflow = "auto";
-            tbody.style.height = "400px"; // Adjust the height as needed
+            //tbody.style.height = "400px"; // Adjust the height as needed
 
             document.body.appendChild(table);
             submitButton(row)
@@ -402,33 +477,45 @@
                   }
                 console.log(Object.keys(message))
                 if (Object.keys(message) != "") { 
-                    const apiEndpoint = 'https://undpixtfr2.execute-api.us-east-1.amazonaws.com/update/hello';
-                    const datasetParam = encodeURIComponent(JSON.stringify(message));
-                    const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&company=${company}&site=${site}&type=${type}`;
+                    const apiEndpoint = 'https://ysxjqnxy7l.execute-api.us-east-1.amazonaws.com/trips/update_trips';
+                    const url = `${apiEndpoint}?ts=${timestamp}&company=${company}&site=${site}&type=${type}`;
 
+                    
 
+                   
                     var xhttp = new XMLHttpRequest();
-
+                    
                     const confirmed = confirm(`Emin misiniz?`);
-                    if (confirmed) { // only proceed if user confirmed
-                            xhttp.open("GET",url, true);
-                            xhttp.send();
-                            xhttp.onreadystatechange = function() {
-                            if (this.readyState === 4) {
-                              if (this.status === 200) {
-                                // Request completed successfully
-                                alert("LT ve Açıklama Girilimiş Veriler Gönderildi");
-                              } else {
-                                // An error occurred
-                                alert("Hata Oluştu");
-                              }
+                        if (confirmed) { // only proceed if user confirmed
+
+                                document.getElementById('loading-spinner').style.display = 'block';
+
+                                xhttp.open("POST",url, true);
+
+                                xhttp.setRequestHeader('Content-Type','X-Amz-Date','Authorization','X-Api-Key','X-Amz-Security-Token'); // Set the content type to JSON
+                                console.log("burası")
+                                const requestBody = JSON.stringify(message);
+                                
+                                xhttp.onreadystatechange = function() {
+                                if (this.readyState === 4) {
+                                  if (this.status === 200) {
+                                    // Request completed successfully
+                                    document.getElementById('loading-spinner').style.display = 'none';
+                                    alert("Veriler Gönderildi");
+                                    
+                                  } else {
+                                    // An error occurred
+                                    document.getElementById('loading-spinner').style.display = 'none';
+                                    alert("Hata Oluştu");
+                                  }
+                                }
+                              };
+                              xhttp.send(requestBody); // Send the request body
+                                //document.body.innerHTML = '';
+                                //window.location.href = "mainpage.html";
                             }
-                          };
-                            //document.body.innerHTML = '';
-                            //window.location.href = "mainpage.html";
-                        }
-                    
-                    
+                        
+                        
 
                     
                 }else{

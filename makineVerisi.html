@@ -259,8 +259,7 @@
 
 function getHeaders(){
         const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';    
-        const url2 = `${apiEndpoint2}?site=${site}&type=${type}`;
-        fetch(url2)
+        const url2 = `${apiEndpoint2}?site=${site}&company=${company}&type=${type}`;        fetch(url2)
               .then(response => response.json())
               .then(data => {
                 var data_headers = Object.values(data)
@@ -311,8 +310,8 @@ function getTrucks(){
 
 
 function getKmHour(){
-        const apiEndpoint1 = 'https://bjpto6e4bb.execute-api.us-east-1.amazonaws.com/get_daily/get_daily_data';    
-        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}&timestamp=${timestamp}`;
+        const apiEndpoint1 = 'https://2a8j7nfwb5.execute-api.us-east-1.amazonaws.com/daily_data/get_daily_data';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}&start_ts=${timestamp}&end_ts=${timestamp}`;
         console.log(url1)
           // araç bilgilerini getirir
           fetch(url1)
@@ -334,18 +333,25 @@ function getTable(){
         
 
             let dateString = event.target.value;
+            const [year, month, day] = dateString.split('-').map(Number);
+            const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+            timestamp = chosenUTC/1000
+            /*
+            console.log("dateString:    ",dateString)
             let year = dateString.substring(0, 4);
             let month = dateString.substring(5, 7) - 1;
             let day = dateString.substring(8, 10);
             let selectedDate = new Date(year, month, day);
             timestamp = selectedDate.getTime()/1000;
+            */
             console.log("Timestamp:", timestamp);
-            date = selectedDate;
+            date = timestamp;
             row = rows
             const currentDate = new Date(); // Get the current date and time
-            currentDate.setHours(0, 0, 0, 0); // Set the time to 12:00 am
+            currentDate.setUTCHours(0, 0, 0, 0); // Set the time to 12:00 am
             todays_timestamp = currentDate.getTime()/1000;
-            console.log(todays_timestamp);
+            console.log("todays_timestamp:    ",todays_timestamp);
+
 
 
             var button1 = document.createElement("button");

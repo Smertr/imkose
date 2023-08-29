@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Çalışma Alanı Kontrol</title>
+  <style>
+   
+      #date-form {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid gray;
+      border-radius: 5px;
+      max-width: 500px;
+      font-family: Arial, sans-serif;
+    }
+       
+        
+    #date-form label {
+      margin-right: 10px;
+      font-size: 15px;
+    }
+    
+    #date-form input[type="date"] {
+      border: 1px solid gray;
+      border-radius: 5px;
+      padding: 5px;
+      font-size: 15px;
+      font-family: Arial, sans-serif;
+    }
+
+
+  table {
+          
+          /*border: 1px solid #4A5669;*/
+          /*border-radius: 0px;*/
+          width: 75%;
+        }
+
+        th, td {
+          padding: 5px;
+          text-align: center;
+          border: 1px solid #4A5669;
+
+        }
+        /* Style the remaining rows with alternating background colors */
+        tr:nth-child(odd) {
+          background-color: #FAFAFA;
+          color: #656666;
+        }
+
+        tr:nth-child(even) {
+          background-color: #DBE5F7;
+          color: #656666;
+        }
+
+        
+        
+
+
+  
+  </style>
+</head>
+<body>
+
+<!-- AWS JavaScript SDKs -->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+
+
+
+<!-- Add a loading spinner -->
+  <div id="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+
+
+   <form id="date-form" style="display: block;">
+        <label for="date">Tarih Seçiniz:</label>
+        <input type="date" id="start-date">
+        <input type="date" id="end-date">        
+  </form>
+  <button id="confirm-button"style="display: block;">Sorgula</button>
+
+
+
+
+<script>
+  var company = "";
+  var site = "";
+  var startTimestamp = 0;
+  var endTimestamp   = 0;
+  var raw_data ={}
+      
+
+            
+
+
+
+  // Check the user info on AWS and get the details of the user
+  var data = {
+    UserPoolId: 'us-east-1_1uKtiajQH',
+    ClientId: '4rigc1mv6tt9h9kn5dvf8p859f'
+  };
+
+  var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
+  var cognitoUser = userPool.getCurrentUser();
+
+  cognitoUser.getSession(function (err, session) {
+    if (err) {
+      alert(err);
+      return;
+    }
+
+    // Add the User's Id Token to the Cognito credentials login map.
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',
+      Logins: {
+        'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()
+      }
+    });
+
+    cognitoUser.getUserAttributes(function (err, result) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      company = result[3].getValue();
+      site = result[2].getValue();
+      console.log(result);
+      console.log(site);
+
+      
+
+      // Hide the loading spinner
+    });
+
+  });
+
+
+
+    function dateToTimesamp(stringDate){
+    const [year, month, day] = stringDate.split('-').map(Number);
+    const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+    timestamp = chosenUTC/1000
+    return timestamp
+  }
+
+
+
+
+
+    let dateForm = document.getElementById('date-form');
+    let confirmButton = document.getElementById('confirm-button');
+
+    confirmButton.addEventListener("click", function(event) {
+      
+      /*
+      var startDate = document.getElementById('start-date').value;
+      var endDate   = document.getElementById('end-date').value;
+
+      startTimestamp = dateToTimesamp(startDate)
+      endTimestamp   = dateToTimesamp(endDate)
+      
+      
+
+
+      console.log("Start Timestamp:", startTimestamp);
+      console.log("End Timestamp:", endTimestamp);
+
+      if(endTimestamp-startTimestamp > 2678400){
+
+        alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
+      }else{
+
+        querry_datas()
+      }
+      */
+      
+      startTimestamp = 1690848000
+      endTimestamp   =11690934400
+      querry_datas()
+
+      
+      
+    });
+
+
+
+
+function querry_datas() {
+  
+
+  const apiEndpoint = 'https://pr3x7ddc4i.execute-api.us-east-1.amazonaws.com/daily_matrix/get_matrix';
+  const url = `${apiEndpoint}?startdate=${startTimestamp}&enddate=${endTimestamp}&company=${company}&site=${site}`;
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+        //console.log(data)
+        raw_data = data
+
+        createTableFromJson(raw_data);
+            
+    })
+    .catch(error => console.error(error));
+
+    
+}
+
+
+function createTableFromJson(raw_data) {
+    // Get the keys from the first object to use as column headers
+    const columns = Object.keys(raw_data[0]);
+    
+    // Create the table element
+    const table = document.createElement('table');
+
+    // Create the table header row
+    const headerRow = document.createElement('tr');
+
+    // Loop through the columns and create header cells
+    columns.forEach(column => {
+        const th = document.createElement('th');
+        th.textContent = column;
+        headerRow.appendChild(th);
+    });
+
+    // Append the header row to the table
+    table.appendChild(headerRow);
+    
+    // Loop through the JSON data and create rows and cells
+    for(let i = 0; i < Object.keys(raw_data).length; i++) {
+
+        const row = document.createElement('tr');
+        columns.forEach(column => {
+            const cell = document.createElement('td');
+            cell.textContent = raw_data[i][column]; // Fixed this line
+            row.appendChild(cell);
+        });
+        table.appendChild(row);
+    }
+    table.style.tableLayout = "fixed";
+    //thead.style.position = "sticky";
+
+    // Append the table to the body of the document
+    document.body.appendChild(table);
+    console.log('Table created and appended to the body.');
+}
+
+
+
+
+
+
+</script>
+</body>
+</html>

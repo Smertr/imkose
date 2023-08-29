@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Çalışma Alanı Kontrol</title>
+  <style>
+    /* Add some basic styling */
+    .list-container {
+
+    border: 1px solid #ccc;
+    padding: 3px;
+    border-radius: 5px;
+    margin-bottom: 10px; /* Add some margin between the dropdowns */
+    width: 200px; /* Adjust the width as needed */
+    display: flex;
+    align-items: center; /* Align items vertically in the container */
+    height: 50px;
+
+    }
+    .list-title {
+    margin-right: 8px; /* Add space between the title and the dropdown list */
+    margin-left: 8px;
+  }
+    
+
+    .list-container select {
+    height: 32px; /* Adjust the height as needed */
+    font-size: 14px; /* Adjust the font size as needed */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+  }
+
+  /* Style the dropdown options */
+  .list-container select option {
+    /* Additional styles for the dropdown options, if needed */
+  }
+
+
+    /* Add this style for the table container */
+  .table-container {
+    height: 500px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 35%;
+    margin-right: 50px; /* Add some margin between the dropdowns */
+    margin-left: 20px; /* Add some margin between the dropdowns */
+  }
+
+  .table-container2 {
+    height: 500px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 35%;
+
+    margin-right: 50px;
+    margin-left: 150px;
+  }
+
+  .table-container3 {
+    height: 500px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 15%;
+
+    margin-top: 30px; /* Add a small margin between the tables */
+    margin-bottom: 30px; /* Add a small margin between the tables */
+  }
+
+  /* Add this style for the table header cells */
+  table th {
+    position: sticky;
+    top: 0;
+    background-color: #f1f1f1; /* Customize the background color as needed */
+
+  }
+
+  /* Add this style for the row header cells */
+  table th:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f1f1f1; /* Customize the background color as needed */
+
+  }
+
+
+
+  
+
+
+  /* Submit button styles */
+  .submit-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #2c3e50;
+    color: white;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 30px; /* Add a small margin between the tables */
+    margin-bottom: 10px; /* Add a small margin between the tables */
+  }
+  
+  .submit-btn:hover {
+    background-color: #34495e;
+  }
+  
+  .submit-btn:active {
+    transform: translateY(1px);
+  }
+
+
+  #date-form {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          margin-top: 30px;
+          margin-bottom: 5px;
+          padding: 10px;
+          border: 1px solid gray;
+          border-radius: 5px;
+          max-width: 300px;
+          font-family: Arial, sans-serif;
+}
+  
+  
+  #date-form label {
+    margin-right: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    max-width: 100px;
+  }
+  
+  #date-form input[type="date"] {
+    border: 1px solid gray;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 20px;
+    font-family: Arial, sans-serif;
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+
+  /* Add this style for the loading spinner */
+/* Add this style for the loading spinner */
+#loading-spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Make sure it's above other content */
+}
+
+.spinner {
+  position: fixed;
+  top: 45%;
+  left: 45%;
+  
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border-top: 5px solid #387ed8;
+  border-right: 5px solid transparent;
+  animation: spin 1s linear infinite;
+}
+
+   @keyframes spin {
+     to {
+       transform: rotate(360deg);
+     }
+   }
+
+
+
+
+  
+  </style>
+</head>
+<body>
+
+<!-- AWS JavaScript SDKs -->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.3/pako.min.js"></script>
+
+
+
+
+<!-- Add a loading spinner -->
+  <div id="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+
+
+
+
+<script>
+  var type = "SEFERLER";
+  var company = "";
+  var site = "";
+  var rawData;
+  var kamyonlar;
+  var kamyon_id;
+  var kamyon_type;
+  var makinalar;
+  var vehicleTypes =[]
+  var kms ={};
+  var hours ={};
+  var temp ={} // kayıtlı verilerin json objecti
+  var selectedVehicle = ""; // Global variable to store the selected shift
+  var workedVehicle =[]; // işlem yapılmış araçlar listesi
+  var columns=[];
+  var rowTotals ={};
+  var nakliyeLimits ;
+  var makinaLimits ;
+  var timestamp =0;
+  var message ={};
+
+            
+
+
+
+  // Check the user info on AWS and get the details of the user
+  var data = {
+    UserPoolId: 'us-east-1_1uKtiajQH',
+    ClientId: '4rigc1mv6tt9h9kn5dvf8p859f'
+  };
+
+  var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
+  var cognitoUser = userPool.getCurrentUser();
+
+  cognitoUser.getSession(function (err, session) {
+    if (err) {
+      alert(err);
+      return;
+    }
+
+    // Add the User's Id Token to the Cognito credentials login map.
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',
+      Logins: {
+        'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()
+      }
+    });
+
+    cognitoUser.getUserAttributes(function (err, result) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      company = result[3].getValue();
+      site = result[2].getValue();
+      console.log(result);
+      console.log(site);
+
+      getMetaData();
+
+      // Hide the loading spinner
+    });
+
+  });
+
+
+  function removeDuplicates(arr) {
+    return Array.from(new Set(arr));
+  }
+
+
+  function checkIfInArray(array,valueToCheck){
+      if (array.indexOf(valueToCheck) !== -1) {
+        return true
+      } else {
+        return false
+      }
+
+  }
+
+  function checkData(){
+    for (var i =0; i < Object.values(rawData.shifts).length; i++) {
+      for (var j =0; j < Object.values(rawData.materials).length; j++){
+        var a = Object.values(rawData.shifts)[i]
+        var b = Object.values(rawData.materials)[j]
+        var savedDataTitle = a+","+b
+        //console.log(savedDataTitle)
+        const savedJsonString = localStorage.getItem(savedDataTitle);
+        const savedJsonObject = JSON.parse(savedJsonString);
+        
+
+        if (savedJsonString) {
+         
+            temp[savedDataTitle]=savedJsonObject
+
+
+            Object.keys(savedJsonObject).forEach(trucks => {
+
+              workedVehicle.push(trucks) // kwmyonları kaydeder
+            });
+
+            Object.values(savedJsonObject).forEach(val => {
+              Object.keys(val).forEach(hdm => {
+                workedVehicle.push(hdm) // makinaları kaydeder
+              })
+
+              
+            });
+            
+            workedVehicle = removeDuplicates(workedVehicle)
+
+            
+        
+
+        }else{
+          //console.log('No saved data found.');
+        }
+      }
+    } 
+    console.log("temp:    ",temp)
+    //console.log("workedVehicle:    ",workedVehicle)
+
+
+    // Add submit button
+      var submitButton = document.createElement("button");
+      submitButton.textContent = "Tabloyu Getir";
+      submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+      submitButton.addEventListener("click", function() {
+        console.log("basıldı")
+        createTable(kms,hours,kamyon_id,makinalar)
+        
+
+      });
+
+      const existingButton = document.querySelector('button');
+      if (!existingButton){
+        document.body.appendChild(submitButton);
+      }
+
+
+  }
+
+
+
+
+
+
+  function getMetaData() {
+    const apiEndpoint = 'https://sxl4s33mtd.execute-api.us-east-1.amazonaws.com/get_meta/get_metadata';
+    const url = `${apiEndpoint}?site=${site}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        rawData = data[0];
+        columns=["BAŞLANGIÇ","BİTİŞ"]
+        Object.values(rawData.shifts).forEach(shift => {
+          columns.push(shift+" "+"MAZOT")
+
+
+        });
+
+
+
+        Object.values(rawData.types).forEach(type => {
+          if (type=="NAKLİYE" ||  type=="MAKİNA"){
+            vehicleTypes.push(type)
+            if (type=="NAKLİYE"){
+              getTrucks(kms,type)
+              nakliyeLimits = getHeaders("NAKLİYE")
+
+            }else{
+              getTrucks(hours,type)
+              makinaLimits = getHeaders("NAKLİYE")
+            }
+          }
+        
+        });
+
+        kamyonlar = data[1];
+        makinalar = data[2];
+        kamyon_id = Object.keys(kamyonlar)
+        kamyon_type = Object.values(kamyonlar)
+        console.log("rawData:     " ,vehicleTypes);
+        
+        /*
+        console.log(kamyonlar);
+        console.log(makinalar);
+        console.log(kamyon_id);
+        console.log(kamyon_type);
+        */
+
+        
+
+        // Create Shifts Dropdown
+        //createDropdownList(vehicleTypes, 'shiftDropdown', handleShiftSelection, 'Araç Tipi');
+        checkData()
+
+
+      })
+
+      .catch(error => console.error(error));
+  }
+
+
+
+
+  function getTrucks(works,type){
+        const apiEndpoint1 = 'https://3oddda3bhd.execute-api.us-east-1.amazonaws.com/gethdms/hdms';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                
+                var work =[]
+                var rows = Object.keys(data);
+                Object.values(data).forEach(value => {
+                  const [model, km, marka ,tip, site] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
+                  work.push(km)
+                  
+                });
+                
+
+                for (let i =0; i<work.length; i++){
+                  works[rows[i]] = work[i]
+                }
+
+              })
+              .catch(error => console.error(error));
+      }
+
+
+
+
+
+function getHeaders(type){
+        const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';    
+        const url2 = `${apiEndpoint2}?site=${site}?company=${company}&type=${type}`;
+        var array={};
+        fetch(url2)
+              .then(response => response.json())
+              .then(data => {
+                var data_headers = Object.values(data)
+                
+                Object.values(data_headers).forEach(params => {
+                    Object.values(params).forEach(value => {
+                      console.log(value.title)
+                        /*
+                        headers.push(value.title);
+                        headers_input.push(value.input_type);
+                        headers_limit_up.push(value.limit_up);
+                        headers_limit_down.push(value.limit_down);
+                        */
+                        array[value.title] = value.limit_up
+
+                        //console.log(value.title)
+                     
+                      })
+                    
+              });
+                
+              })
+              .catch(error => console.error(error));
+              return array
+
+}
+
+
+
+
+
+  function createDropdownList(items, dropdownId, changeEventHandler, title) {
+    const listContainer = document.createElement('div');
+    listContainer.classList.add('list-container');
+
+    // Add title for the list
+    const listTitle = document.createElement('h3');
+    listTitle.textContent = title;
+    listTitle.classList.add('list-title'); // Apply the .list-title class
+    listContainer.appendChild(listTitle);
+
+    // Create the dropdown list
+    const dropdown = document.createElement('select');
+    dropdown.id = dropdownId;
+
+    // Add a default blank option
+    const defaultOption = document.createElement('option');
+    defaultOption.textContent = "Seçiniz...";
+    dropdown.appendChild(defaultOption);
+
+    for (const key in items) {
+      if (items.hasOwnProperty(key)) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = items[key];
+        dropdown.appendChild(option);
+      }
+    }
+
+    // Add event listener to the dropdown list
+    dropdown.addEventListener('change', changeEventHandler);
+
+    // Append the dropdown to the container
+    listContainer.appendChild(dropdown);
+
+    // Append the container to the body
+    document.body.appendChild(listContainer);
+  }
+
+
+
+
+  function handleShiftSelection(event) {
+    const selectedKey = event.target.value;
+    const selectedValue = vehicleTypes[selectedKey];
+    selectedVehicle = selectedValue;
+    console.log("Selected Shift: " + selectedVehicle);
+
+  }
+
+
+
+function getRandomNumber() {
+  return Math.floor(Math.random() * 41); // Generates a random number between 0 and 40 (inclusive)
+}
+
+
+
+
+
+function createTable(works,works2,row_id,row_id2) {
+
+  console.log("nakliyeLimits:    ",nakliyeLimits)
+  console.log("makinaLimits:    ",makinaLimits) 
+
+  // Check if the table container already exists
+  const existingTableContainer = document.querySelectorAll('.table-container, .table-container2, .submit-btn');
+  existingTableContainer.forEach((container) => {
+    const parentElement = container.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(container);
+    }
+
+  });
+
+  // Create the parent container to hold both tables side by side
+  const tablesContainer = document.createElement('div');
+  tablesContainer.style.display = 'flex'; // Set the display style to flex to place tables side by side
+
+
+  const tableContainer = document.createElement('div');
+  tableContainer.classList.add('table-container');
+
+  const headerRowContainer = document.createElement('div');
+  headerRowContainer.classList.add('header-row-container');
+
+  // Create the table
+  const table = document.createElement('table');
+
+  // Create the table header row
+  const headerRow = document.createElement('tr');
+  const headerCell = document.createElement('th');
+  headerRow.appendChild(headerCell); // An empty header cell in the top-left corner
+  for (const column in columns) {
+      const headerCell = document.createElement('th');
+      headerCell.textContent = columns[column];
+      headerCell.style.width = '100px';
+      headerRow.appendChild(headerCell);
+  }
+  table.appendChild(headerRow);
+
+  // Create rows and input cells
+  for (const rows in row_id) {
+      const row = document.createElement('tr');
+      const rowHeaderCell = document.createElement('th');
+      rowHeaderCell.textContent = row_id[rows];
+      rowHeaderCell.style.textAlign = 'left';
+      row.appendChild(rowHeaderCell);
+
+      // Store the "BAŞLANGIÇ" input element to calculate difference later
+      let startInput;
+
+
+      for (const column in columns) {
+          const cell = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.style.width = '100px';
+
+          if (columns[column] == "BAŞLANGIÇ"){
+            input.value =  works[row_id[rows]]
+            input.readOnly = true; // make the input element read-only
+
+            startInput = input; // Store the "BAŞLANGIÇ" input element
+
+          }else if (columns[column] == "BİTİŞ") {
+              
+              input.addEventListener('blur', function () {
+                  const startValue = parseFloat(startInput.value) || 0;
+                  const endValue = parseFloat(input.value) || 0;
+                  const difference = endValue - startValue;
+                  if (difference != ''){
+
+                      if (difference > nakliyeLimits[columns[column]]) {
+                          alert(`Başlangıç verisinden fazla girildi. Fark:${difference} Günlük limit: ${nakliyeLimits[columns[column]]} `);
+                          input.value = '';
+                      }else if (difference <0 ){
+                        alert(`Başlangıç verisinden az girildi. Fark:${difference} Günlük limit: ${nakliyeLimits[columns[column]]} `);
+                          input.value = '';
+                      }
+                  }
+                  
+              });
+          }else if (columns[column] == "GÜNDÜZ MAZOT"){ 
+              input.addEventListener('blur', function () {
+                  const enteredValue = parseFloat(input.value) || 0;
+                  if (enteredValue > nakliyeLimits[columns[column]]) {
+                      alert(`Günlük limit: ${nakliyeLimits[columns[column]]} `);
+                      input.value = '';
+                  }
+              });
+          }else{
+              input.addEventListener('blur', function () {
+                  const enteredValue = parseFloat(input.value) || 0;
+                  if (enteredValue > nakliyeLimits[columns[column]]) {
+                      alert(`Günlük limit: ${nakliyeLimits[columns[column]]} `);
+                      input.value = '';
+                  }
+              });
+          }
+
+
+
+          if(checkIfInArray(workedVehicle,row_id[rows])){
+            input.style.backgroundColor = 'lightblue';
+            if (columns[column] == "BİTİŞ"){
+              input.value =  parseInt(works[row_id[rows]]) + getRandomNumber()   ////////////////////////////////////////////////////////////////////////////////////
+            }
+            else if (columns[column] == "GÜNDÜZ MAZOT"){
+                input.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
+              }
+
+              else if (columns[column] == "GECE MAZOT"){
+                input.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
+              }
+          }
+
+          cell.appendChild(input);
+          row.appendChild(cell);
+      }
+
+      table.appendChild(row);
+  }
+  
+
+  tableContainer.appendChild(table);
+  document.body.appendChild(headerRowContainer);
+  document.body.appendChild(tableContainer);
+
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+    const tableContainer2 = document.createElement('div');
+    tableContainer2.classList.add('table-container2');
+
+    const headerRowContainer2 = document.createElement('div');
+    headerRowContainer2.classList.add('header-row-container');
+
+    // Create the table
+    const table2 = document.createElement('table');
+
+    // Create the table header row
+    const headerRow2 = document.createElement('tr');
+    const headerCell2 = document.createElement('th');
+    headerRow2.appendChild(headerCell2); // An empty header cell in the top-left corner
+    for (const column in columns) {
+        const headerCell2 = document.createElement('th');
+        headerCell2.textContent = columns[column];
+        headerCell2.style.width = '100px';
+        headerRow2.appendChild(headerCell2);
+    }
+    table2.appendChild(headerRow2);
+
+    // Create rows and input cells
+    for (const rows2 in row_id2) {
+        const row2 = document.createElement('tr');
+        const rowHeaderCell2 = document.createElement('th');
+        rowHeaderCell2.textContent = row_id2[rows2];
+        rowHeaderCell2.style.textAlign = 'left';
+        row2.appendChild(rowHeaderCell2);
+
+        let startInput2;
+        for (const column in columns) {
+            const cell2 = document.createElement('td');
+            const input2 = document.createElement('input');
+            input2.type = 'number';
+            input2.style.width = '100px';
+
+            if (columns[column] == "BAŞLANGIÇ"){
+              input2.value =  works2[row_id2[rows2]]
+              input2.readOnly = true; // make the input element read-only
+
+              startInput2 = input2; // Store the "BAŞLANGIÇ" input element
+            }else if (columns[column] == "BİTİŞ") {
+                input2.addEventListener('blur', function () {
+                    const startValue = parseFloat(startInput2.value) || 0;
+                    const endValue = parseFloat(input2.value) || 0;
+                    const difference = endValue - startValue;
+
+                    if (difference > makinaLimits["BİTİŞ"]) {
+                        alert(`Başlangıç verisinden fazla girildi. Günlük limit: ${makinaLimits['Bitiş KM']} `);
+                        input2.value = '';
+                    }else if (difference <0 ){
+                      alert(`Başlangıç verisinden az girildi. Günlük limit: ${makinaLimits['Bitiş KM']} `);
+                        input2.value = '';
+                    }
+                });
+            }else if (columns[column] == "GÜNDÜZ MAZOT"){ 
+              input2.addEventListener('blur', function () {
+                  const enteredValue = parseFloat(input2.value) || 0;
+                  if (enteredValue > makinaLimits["GÜNDÜZ MAZOT"]) {
+                      alert(`Günlük limit: ${makinaLimits['GÜNDÜZ MAZOT']} `);
+                      input2.value = '';
+                  }
+              });
+          }else{
+              input2.addEventListener('blur', function () {
+                  const enteredValue = parseFloat(input2.value) || 0;
+                  if (enteredValue > makinaLimits["GECE MAZOT"]) {
+                      alert(`Günlük limit: ${makinaLimits['GECE MAZOT']} `);
+                      input2.value = '';
+                  }
+              });
+          }
+
+            if(checkIfInArray(workedVehicle,row_id2[rows2])){
+              input2.style.backgroundColor = 'lightblue';
+              if (columns[column] == "BİTİŞ"){
+                input2.value =  parseInt(works2[row_id2[rows2]]) + getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
+              }
+              else if (columns[column] == "GÜNDÜZ MAZOT"){
+                input2.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
+              }
+
+              else if (columns[column] == "GECE MAZOT"){
+                input2.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
+              }
+                              
+
+            }
+
+
+            cell2.appendChild(input2);
+            row2.appendChild(cell2);
+        }
+
+        table2.appendChild(row2);
+    }
+    
+
+    tableContainer.appendChild(table);
+    tableContainer2.appendChild(table2);
+
+    tablesContainer.appendChild(tableContainer);
+    tablesContainer.appendChild(tableContainer2);
+
+    document.body.appendChild(tablesContainer);
+
+
+
+    // Add submit button
+      var submitButton = document.createElement("button");
+      submitButton.textContent = "Kaydet";
+      submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+      submitButton.addEventListener("click", function() {
+        console.log("basıldı")
+        //window.location.href = "kmMazotVeriGirsi.html";
+        calculateRowTotals()
+        createDateForm()
+        submitButton.style.display = "none"; // Hide the button when clicked
+        
+        
+      });
+
+      const existingButton = document.querySelector('button');
+      if (!existingButton){
+        document.body.appendChild(submitButton);
+      }
+
+  
+
+}
+
+function calculateRowTotals() {
+  const tables = document.querySelectorAll('table'); // Select all tables on the page
+
+  rowTotals = {}; // Initialize an empty object to store row totals
+
+  tables.forEach(table => { // Loop through each table
+    const rows = table.getElementsByTagName('tr');
+
+    const columns = []; // Initialize an array to store column names
+
+    // Extract column headers from the first row (header row)
+    const headerCells = rows[0].getElementsByTagName('th');
+    for (let k = 1; k < headerCells.length; k++) {
+      columns.push(headerCells[k].textContent);
+    }
+
+    for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
+      const cells = rows[i].getElementsByTagName('td');
+      let rowTotal = {};
+
+      for (let j = 0; j < cells.length; j++) {
+        const cellValue = parseInt(cells[j].querySelector('input').value);
+        if (!isNaN(cellValue)) {
+          rowTotal[columns[j]] = cellValue;
+        }
+      }
+
+      const rowHeader = rows[i].getElementsByTagName('th')[0].textContent;
+      if (Object.keys(rowTotal).length > 1) {
+        rowTotals[rowHeader] = rowTotal;
+      }
+    }
+  });
+
+  console.log("rowTotals:   ",rowTotals); // Display row totals with row header names in the console as a JSON object
+}
+
+
+
+// Log the current timestamp
+function logTimestamp(chosenDate) {
+    const [year, month, day] = chosenDate.split('-').map(Number);
+    const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+    timestamp = chosenUTC/1000
+    console.log("Button clicked at:", timestamp);
+}
+
+
+// Create a date input form using JavaScript
+function createDateForm() {
+    const form = document.createElement("form");
+
+
+    const label = document.createElement("label");
+    label.textContent = "Tarih Seçiniz:";
+    label.setAttribute("for", "date");
+    label.setAttribute("id", "date-form");
+
+    const input = document.createElement("input");
+    input.setAttribute("type", "date");
+    input.setAttribute("id", "date-form");
+    //input.setAttribute("name", "dateInput");
+
+    const button = document.createElement("button");
+    button.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+    button.setAttribute("type", "submit");
+    button.setAttribute("id", "submit-btn");
+    button.textContent = "VERİLERİ GÖNDER";
+    button.addEventListener("click", function() {
+        event.preventDefault(); // Prevent form submission
+        logTimestamp(input.value); // Call the function to log the timestamp with chosen date
+        message["temp"] = temp;
+        calculateRowTotals()
+        message["rowTotals"] = rowTotals
+        sendMessage(message)
+      });
+
+    form.appendChild(label);
+    form.appendChild(input);
+    form.appendChild(button);
+
+    document.body.appendChild(form);
+}
+
+// Call the function to create the date form
+
+
+
+function sendMessage(message){
+
+  const apiEndpoint = 'https://ysxjqnxy7l.execute-api.us-east-1.amazonaws.com/trips/update_trips';
+  const datasetParam = encodeURIComponent(JSON.stringify(message));
+  const url = `${apiEndpoint}?ts=${timestamp}&company=${company}&site=${site}&type=${type}`;
+
+  
+
+ 
+  var xhttp = new XMLHttpRequest();
+  
+  const confirmed = confirm(`Emin misiniz?`);
+      if (confirmed) { // only proceed if user confirmed
+
+              document.getElementById('loading-spinner').style.display = 'block';
+
+              xhttp.open("POST",url, true);
+
+              xhttp.setRequestHeader('Content-Type','X-Amz-Date','Authorization','X-Api-Key','X-Amz-Security-Token'); // Set the content type to JSON
+              console.log("burası")
+              const requestBody = JSON.stringify(message);
+              
+              xhttp.onreadystatechange = function() {
+              if (this.readyState === 4) {
+                if (this.status === 200) {
+                  // Request completed successfully
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  alert("Veriler Gönderildi");
+                  window.location.href = "capacityForm.html";
+                } else {
+                  // An error occurred
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  alert("Hata Oluştu");
+                }
+              }
+            };
+            xhttp.send(requestBody); // Send the request body
+              //document.body.innerHTML = '';
+              //window.location.href = "mainpage.html";
+          }
+                            
+
+
+
+
+}
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>

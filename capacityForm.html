@@ -3,6 +3,24 @@
 <head>
   <title>Kapasite Verisi</title>
   <style>
+    /* Add this style for the table header cells */
+  table th {
+    position: sticky;
+    top: 0;
+    background-color: #f1f1f1; /* Customize the background color as needed */
+
+  }
+
+  /* Add this style for the row header cells */
+  table th:first-child {
+    position: sticky;
+    left: 0;
+    background-color: #f1f1f1; /* Customize the background color as needed */
+
+  }
+        
+
+
 
     #date-form {
           display: flex;
@@ -76,6 +94,8 @@
 
 
   <button  id="submitButton" style="display: none;" class="submit-btn"  onclick="readSaveValues()">Kaydet</button>
+  <br>
+  <br>
  
 
 
@@ -93,6 +113,11 @@
   let headers =[];
   let sub_headers =[];
   let row_headers =[];
+  var meta_data;
+  var columnHeaders; 
+  var rowHeaders1; 
+  var rowHeaders2; 
+  var raw_data={};
 
   // Check the user info on AWS and get the details of user
   var data = {
@@ -132,8 +157,11 @@
               console.log(result);
               console.log(company);
               console.log(site);
+
+
               
-              document.getElementById('date-form').style.display = 'block';
+              
+              getMetaData()
               }
              
           });
@@ -142,21 +170,60 @@
 
 
 
+function getMetaData() {
+    const apiEndpoint = 'https://sxl4s33mtd.execute-api.us-east-1.amazonaws.com/get_meta/get_metadata';
+    const url = `${apiEndpoint}?site=${site}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        meta_data = data[0];
+        columnHeaders =Object.values(meta_data["NAKLİYE"])
+        rowHeaders1 =Object.values(meta_data["kapasite"])
+        rowHeaders2 =Object.values(meta_data["metrik"])
+        
+        console.log("columnHeaders:    ",columnHeaders)
+        console.log("rowHeaders1:    ",rowHeaders1)
+        console.log("rowHeaders2:    ",rowHeaders2)
+        //createTable()
+        document.getElementById('date-form').style.display = 'block';
+
+      })
+      .catch(error => console.error(error));
+  }
+
+
+
+
+
+
+
+
+
+
 
     function logTimestamp() {
+      
 
 
       
       var dateInput = document.getElementById('date');
-      var selectedDate = dateInput.value;
       
-      timestamp = new Date(selectedDate).getTime();
-      timestamp = timestamp /1000
-      timestamp = timestamp -10800;
+
+
+      let dateString = dateInput.value;
+      const [year, month, day] = dateString.split('-').map(Number);
+      const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+      timestamp = chosenUTC/1000
+      
+      //timestamp = new Date(selectedDate).getTime();
+      //timestamp = timestamp /1000
+      //timestamp = timestamp -10800;
      
       //timestamp = 1682802000
       console.log(timestamp);
       getCapacity()
+      
+      
     }
 
 
@@ -166,21 +233,22 @@
 
     function getCapacity() {
       const apiEndpoint = 'https://ao672tw5b6.execute-api.us-east-1.amazonaws.com/daily/get_capacity';
-      const url = `${apiEndpoint}?site=${site}&ts=${timestamp}`;
+      const url = `${apiEndpoint}?site=${site}&company=${company}&ts=${timestamp}`;
 
       fetch(url)
         .then(response => response.json())
         .then(data => {
           
-
-          titles = Object.keys(data);
-          val = Object.values(data);
+          raw_data = data
+          //titles = Object.keys(data);
+          //val = Object.values(data);
 
           
-          console.log(titles);
-          console.log(val);
-          createTableForm()
-
+          console.log(raw_data);
+          //console.log(val);
+          //createTableForm()
+          createTable()
+          
 
         })
          
@@ -190,7 +258,80 @@
     }
 
 
+    function createTable() {
+        // Sample data for column and row headers
+      try { 
+        capacityForm.innerHTML = ''; // Clear existing form content
+      }
+      catch{
+        console.log("first")
+      }
+        
+        // Create the table
+        const table = document.getElementById("capacityForm");
+
+        var thead = document.createElement("thead");
+        var tbody = document.createElement("tbody");
+
+        // Create the table header row
+        const headerRow = document.createElement('tr');
+        const emptyHeaderCell = document.createElement('th');
+        headerRow.appendChild(emptyHeaderCell); // An empty header cell in the top-left corner
+        const emptyHeaderCell2 = document.createElement('th');
+        headerRow.appendChild(emptyHeaderCell2); // An empty header cell in the top-left corner
+        for (const columnHeader of columnHeaders) { // Use 'of' instead of 'in' to iterate over array elements
+            const headerCell = document.createElement('th');
+            headerCell.textContent = columnHeader; // Fix the assignment of column header text
+            headerCell.style.width = '100px';
+            headerRow.appendChild(headerCell);
+        }
+        thead.appendChild(headerRow);
+
+        // Create rows and input cells
+        for (const rowHeader1 of rowHeaders1) { // Use 'of' instead of 'in' to iterate over array elements
+            
+
+            for (const rowHeader2 of rowHeaders2) { // Use 'of' instead of 'in' to iterate over array elements
+                const row = document.createElement('tr');
+                const rowHeaderCell1 = document.createElement('th');
+                rowHeaderCell1.textContent = rowHeader1;
+                rowHeaderCell1.style.textAlign = 'left';
+                row.appendChild(rowHeaderCell1);
+                const rowHeaderCell2 = document.createElement('th');
+                rowHeaderCell2.textContent = rowHeader2;
+                rowHeaderCell2.style.textAlign = 'left';
+                row.appendChild(rowHeaderCell2);
+
+
+                for (let i = 0; i < columnHeaders.length; i++){
+                    const cell = document.createElement('td');
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    try{
+                      input.value =  parseFloat(raw_data[columnHeaders[i]][rowHeader1][rowHeader2]) ;
+                    }catch{
+                      input.value =  0 ;
+                    }
+                    
+                    //console.log(raw_data[columnHeaders[i]][rowHeader1][rowHeader2])
+                    cell.appendChild(input); // Append the input field to the cell
+                    row.appendChild(cell);
+                    tbody.appendChild(row);
+                }
+            }
+            
+        }
+
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        document.body.appendChild(table);
+        table.appendChild(document.createElement("br"));
+        document.getElementById('submitButton').style.display = 'block';
+    }
+
+/*
     function createTableForm(){
+
         const form = document.getElementById("capacityForm");
         form.innerHTML = ''; // Clear existing form content
         for (let i = 0; i < titles.length; i++) {
@@ -212,26 +353,65 @@
           }
           form.appendChild(document.createElement("br"));
           document.getElementById('submitButton').style.display = 'block';
-    }
 
+          //createTable()
+    }     
 
+*/
 
 
      function readSaveValues() {
-          const form = document.getElementById("capacityForm"); // Get the form element
-          const inputElements = form.getElementsByTagName("input"); // Get all input elements within the form
-          const capacityForm ={}
 
-          // Loop through the input elements and log their values
-          for (let i = 0; i < inputElements.length; i++) {
-            const input = inputElements[i];
-            capacityForm[titles[i]] = input.value
-            
-          }
-          console.log(capacityForm);
+        const form = document.getElementById("capacityForm"); // Get the form element
+        const inputElements = form.getElementsByTagName("input"); // Get all input elements within the form
+        
+
+        //columnHeaders
+        //rowHeaders1
+        //rowHeaders2
+
+         
+        var cnt = 0
+        const capacityForm ={}
 
 
+       
 
+        var leng = columnHeaders.length
+        var part = inputElements.length / leng
+        for (let i = 0; i < columnHeaders.length; i++) {
+              
+              const kapasite ={}
+              for (let j = 0; j < rowHeaders1.length; j++) {
+
+                    const metrik ={}
+                    for (let k = 0; k < rowHeaders2.length; k++) {
+                        var artik = cnt%part
+                        var rd = Math.floor( cnt / part) 
+                        var cnt2 = (artik*leng)+rd
+                        const input = inputElements[cnt2];
+                        
+                        metrik[rowHeaders2[k]] = input.value
+                        cnt = cnt + 1
+
+                    }
+                    kapasite[rowHeaders1[j]]= metrik
+                 
+          
+              }  
+              capacityForm[columnHeaders[i]] = kapasite
+              
+              
+        }
+
+
+         console.log(capacityForm);
+          
+         
+          
+
+
+          
           const apiEndpoint = 'https://0kpcnjasg0.execute-api.us-east-1.amazonaws.com/update/capacity';
           const datasetParam = encodeURIComponent(JSON.stringify(capacityForm));
           const url = `${apiEndpoint}?ts=${timestamp}&dataset=${datasetParam}&company=${company}&site=${site}`;
@@ -240,13 +420,24 @@
           var xhttp = new XMLHttpRequest();
           
           const confirmed = confirm(`Emin misiniz?`);
-                                    if (confirmed) { // only proceed if user confirmed
-                                        xhttp.open("GET",url, true);
-                                        xhttp.send();
-                                        console.log(capacityForm)
-                                        alert("Veriler Gönderildi"); 
-                                       
-                                    }
+                    if (confirmed) { // only proceed if user confirmed
+                            xhttp.open("GET",url, true);
+                            xhttp.send();
+                            xhttp.onreadystatechange = function() {
+                            if (this.readyState === 4) {
+                              if (this.status === 200) {
+                                // Request completed successfully
+                                alert("Veriler Gönderildi");
+                              } else {
+                                // An error occurred
+                                alert("Hata Oluştu");
+                              }
+                            }
+                          };
+                            //document.body.innerHTML = '';
+                            //window.location.href = "mainpage.html";
+                        }
+     
     }
 
 

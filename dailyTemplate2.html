@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Çalışma Alanı Kontrol</title>
+  <style>
+    /* Add some basic styling */
+    .list-container {
+
+    border: 1px solid #ccc;
+    padding: 3px;
+    border-radius: 5px;
+    margin-bottom: 10px; /* Add some margin between the dropdowns */
+    width: 200px; /* Adjust the width as needed */
+    display: flex;
+    align-items: center; /* Align items vertically in the container */
+    height: 50px;
+
+    }
+    .list-title {
+    margin-right: 8px; /* Add space between the title and the dropdown list */
+    margin-left: 8px;
+  }
+    
+
+    .list-container select {
+    height: 32px; /* Adjust the height as needed */
+    font-size: 14px; /* Adjust the font size as needed */
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+  }
+
+  /* Style the dropdown options */
+  .list-container select option {
+    /* Additional styles for the dropdown options, if needed */
+  }
+
+
+    /* Add this style for the table container */
+  .table-container {
+    height: 600px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    overflow-x: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 45%;
+    margin-right: 50px; /* Add some margin between the dropdowns */
+  }
+
+  .table-container2 {
+    height: 600px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    overflow-x: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 45%;
+    margin-right: 50px;
+    
+  }
+
+  .table-container3 {
+    height: 500px; /* Set the desired height for the container */
+    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
+    width: 15%;
+
+    margin-top: 30px; /* Add a small margin between the tables */
+    margin-bottom: 30px; /* Add a small margin between the tables */
+  }
+
+  /* Add this style for the table header cells */
+  table th {
+    position: sticky;
+    top: 0;
+    background-color: #f1f1f1; /* Customize the background color as needed */
+
+  }
+
+ 
+
+  
+
+
+  /* Submit button styles */
+  .submit-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #2c3e50;
+    color: white;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .submit-btn:hover {
+    background-color: #34495e;
+  }
+  
+  .submit-btn:active {
+    transform: translateY(1px);
+  }
+
+  
+  </style>
+</head>
+<body>
+
+<!-- AWS JavaScript SDKs -->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+<script>
+  var type = "";
+  var company = "";
+  var site = "";
+  var rawData;
+  var materials;
+  var kamyonlar;
+  var kamyon_id;
+  var kamyon2 = [] // işlem gören kamyonlar
+  var makina2 = [] // işlem gören makinalar
+  var kamyon_type;
+  var makinalar;
+  var temp        ={} // kayıtlı verilerin json objecti
+  var rawtotruck  ={}
+  var rawtohdm    ={}
+  var selectedShift = ""; // Global variable to store the selected shift
+  // Check the user info on AWS and get the details of the user
+
+
+
+
+  var data = {
+    UserPoolId: 'us-east-1_1uKtiajQH',
+    ClientId: '4rigc1mv6tt9h9kn5dvf8p859f'
+  };
+
+  var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
+  var cognitoUser = userPool.getCurrentUser();
+
+  cognitoUser.getSession(function (err, session) {
+    if (err) {
+      alert(err);
+      return;
+    }
+
+    // Add the User's Id Token to the Cognito credentials login map.
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',
+      Logins: {
+        'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()
+      }
+    });
+
+    cognitoUser.getUserAttributes(function (err, result) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      company = result[3].getValue();
+      site = result[2].getValue();
+      console.log(result);
+      console.log(site);
+      getMetaData();
+      // Hide the loading spinner
+    });
+
+  });
+
+
+
+
+
+  function getMetaData() {
+    const apiEndpoint = 'https://sxl4s33mtd.execute-api.us-east-1.amazonaws.com/get_meta/get_metadata';
+    const url = `${apiEndpoint}?site=${site}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        rawData = data[0];
+        materials = []
+
+
+        Object.values(rawData.materials).forEach(params => {
+          //if (  (params != "TAŞ")    &&   (params != "MICIR")){
+
+            materials.push(params)
+          //}
+          
+          
+
+        })
+
+        materials.push("TOPLAM")
+        kamyonlar = data[1];
+        makinalar = data[2];
+        kamyon_id = Object.keys(kamyonlar)
+        kamyon_type = Object.values(kamyonlar)
+        console.log(rawData);
+        
+
+        console.log(materials);
+        console.log(kamyonlar);
+        console.log(makinalar);
+        console.log(kamyon_id);
+        console.log(kamyon_type);
+        
+        checkData()
+
+        // Create Shifts Dropdown
+        createDropdownList(rawData.shifts, 'shiftDropdown', handleShiftSelection, 'Vardiya');
+
+      })
+      .catch(error => console.error(error));
+  }
+
+
+
+
+
+  function checkData(){
+    for (var i =0; i < Object.values(rawData.shifts).length; i++) {
+      for (var j =0; j < Object.values(rawData.materials).length; j++){
+        var a = Object.values(rawData.shifts)[i]
+        var b = Object.values(rawData.materials)[j]
+        var savedDataTitle = a+","+b
+        //console.log(savedDataTitle)
+        const savedJsonString = localStorage.getItem(savedDataTitle);
+        const savedJsonObject = JSON.parse(savedJsonString);
+        
+
+        if (savedJsonString) {
+         
+            temp[savedDataTitle]=savedJsonObject
+            //console.log(savedJsonObject)
+        
+
+        }else{
+          console.log('No saved data found.');
+        }
+      }
+    } 
+    console.log("temp:    ",temp)
+  }
+
+
+
+
+  function removeDuplicates(arr) {
+    return Array.from(new Set(arr));
+  }
+
+
+  function rawToTruck() {
+    const data = temp;
+    const result = {};
+    
+
+    for (const key in data) {
+      const [mainCategory, subCategory] = key.split(',');
+
+      if (!result[mainCategory]) {
+        result[mainCategory] = {};
+      }
+
+      if (!result[mainCategory][subCategory]) {
+        result[mainCategory][subCategory] = {};
+      }
+
+      for (const subKey in data[key]) {
+        kamyon2.push(subKey)
+        for (const innerKey in data[key][subKey]) {
+          if (!result[mainCategory][subKey]) {
+            result[mainCategory][subKey] = {};
+            result[mainCategory][subKey]["TOPLAM"] = 0;
+          }
+
+          if (!result[mainCategory][subKey][subCategory]) {
+            result[mainCategory][subKey][subCategory] = 0;
+          }
+
+          result[mainCategory][subKey][subCategory] += data[key][subKey][innerKey];
+          result[mainCategory][subKey]["TOPLAM"] += data[key][subKey][innerKey];
+          
+        }
+      }
+
+
+       // Remove the sub-category object if it exists
+      if (Object.keys(result[mainCategory][subCategory]).length === 0) {
+        delete result[mainCategory][subCategory];
+      }
+    }
+
+    rawtotruck = result;
+
+    //const jsonString = JSON.stringify(result, null, 2);
+    kamyon2 = removeDuplicates(kamyon2);
+    console.log(rawtotruck);
+
+  }
+
+
+
+
+
+
+  function rawToHdm() {
+    const data = temp;
+    const result = {};
+
+    for (const key in data) {
+      const [mainCategory, subCategory] = key.split(',');
+
+      if (!result[mainCategory]) {
+        result[mainCategory] = {};
+      }
+
+      for (const subKey in data[key]) {
+        
+        for (const innerKey in data[key][subKey]) {
+          makina2.push(innerKey)
+          if (!result[mainCategory][innerKey]) {
+            result[mainCategory][innerKey] = {};
+          }
+
+          if (!result[mainCategory][innerKey][subCategory]) {
+            result[mainCategory][innerKey][subCategory] = 0;
+          }
+
+          result[mainCategory][innerKey][subCategory] += data[key][subKey][innerKey];
+
+          if (!result[mainCategory][innerKey]["TOPLAM"]) {
+            result[mainCategory][innerKey]["TOPLAM"] = 0;
+          }
+
+          result[mainCategory][innerKey]["TOPLAM"] += data[key][subKey][innerKey];
+        }
+      }
+    }
+
+    // const jsonString = JSON.stringify(result, null, 2);
+    //console.log(result);
+
+    rawtohdm=result;
+    makina2 = removeDuplicates(makina2);
+    console.log(rawtohdm)
+
+  }
+
+
+
+
+  function createTable(datas1,datas2,rows1,rows2,columns) {
+
+        // Check if the table container already exists
+        const existingTableContainer = document.querySelectorAll('.table-container, .table-container2, .table-container3');
+        existingTableContainer.forEach((container) => {
+          const parentElement = container.parentElement;
+          if (parentElement) {
+            parentElement.removeChild(container);
+          }
+        });
+ 
+
+        // Create the parent container to hold both tables side by side
+        const tablesContainer = document.createElement('div');
+        tablesContainer.style.display = 'flex'; // Set the display style to flex to place tables side by side
+
+
+
+
+        const tableContainer1 = document.createElement('div');
+        tableContainer1.classList.add('table-container');
+
+        const headerRowContainer1 = document.createElement('div');
+        headerRowContainer1.classList.add('header-row-container');
+
+        // Create the table
+        const table1 = document.createElement('table');
+
+        // Create the table header row
+        const headerRow1 = document.createElement('tr');
+        const headerCell1 = document.createElement('th');
+        headerCell1.textContent = "ARAÇLAR";
+        headerRow1.appendChild(headerCell1); // An empty header cell in the top-left corner
+
+        const totalVariables = [];
+
+        for ( var i =0; i< columns.length; i++ ) {
+
+            const headerCell1 = document.createElement('th');
+            headerCell1.textContent = columns[i];
+            headerCell1.style.width = '100px';
+            headerRow1.appendChild(headerCell1);
+            totalVariables.push(0)
+
+            
+        }
+        table1.appendChild(headerRow1);
+
+
+
+        
+
+
+
+        // Create rows and input cells
+        for (var j =0; j< rows1.length; j++   ) {
+            const row1 = document.createElement('tr');
+            const rowHeaderCell1 = document.createElement('th');
+            rowHeaderCell1.textContent = rows1[j];
+            rowHeaderCell1.style.textAlign = 'left';
+            row1.appendChild(rowHeaderCell1);
+
+
+            for (var i =0; i< columns.length; i++ ) {
+
+                const cell1 = document.createElement('td');
+                const input1 = document.createElement('input');
+                input1.style.width = '100px';
+                //input.type = 'number'
+                
+
+                try {
+                  val = datas1[selectedShift][rows1[j]][columns[i]]
+                  input1.style.backgroundColor = 'lightblue';
+                  val = val ?? 0;
+
+                  
+
+
+
+                }catch{
+                  val = 0
+                }
+
+                input1.value = val
+                totalVariables[i] = totalVariables[i] + val
+                input1.readOnly = true; // make the input element read-only
+                cell1.appendChild(input1);
+                row1.appendChild(cell1);
+            }
+
+            table1.appendChild(row1);
+        }
+
+        const row1 = document.createElement('tr');
+        const rowHeaderCell1 = document.createElement('th');
+        rowHeaderCell1.textContent = "TOPLAM";
+        rowHeaderCell1.style.textAlign = 'left';
+        row1.appendChild(rowHeaderCell1);
+
+        for (var i =0; i< columns.length; i++ ) {
+
+                const cell1 = document.createElement('td');
+                const input1 = document.createElement('input');
+                input1.style.width = '100px';
+                input1.value = totalVariables[i]
+                input1.style.backgroundColor = '#FD8888';
+                input1.readOnly = true; // make the input element read-only
+                cell1.appendChild(input1);
+                row1.appendChild(cell1);
+
+
+
+              }
+        table1.appendChild(row1);
+        console.log("totalVariables:    ",totalVariables)
+
+        ////////////////////////////////////////////////////////////////////////////
+
+
+
+        const tableContainer2 = document.createElement('div');
+        tableContainer2.classList.add('table-container2');
+
+        const headerRowContainer2 = document.createElement('div');
+        headerRowContainer2.classList.add('header-row-container');
+
+        // Create the table
+        const table2 = document.createElement('table');
+
+        // Create the table header row
+        const headerRow2 = document.createElement('tr');
+        const headerCell2 = document.createElement('th');
+        headerCell2.textContent = "ARAÇLAR";
+        headerRow2.appendChild(headerCell2); // An empty header cell in the top-left corner
+
+        const totalVariables2 = [];
+
+
+        for ( var i =0; i< columns.length; i++ ) {
+
+            const headerCell2 = document.createElement('th');
+            headerCell2.textContent = columns[i];
+            headerCell2.style.width = '100px';
+            headerRow2.appendChild(headerCell2);
+            totalVariables2.push(0)
+
+            
+        }
+        table2.appendChild(headerRow2);
+
+
+
+
+        // Create rows and input cells
+        for (var j =0; j< rows2.length; j++   ) {
+            const row2 = document.createElement('tr');
+            const rowHeaderCell2 = document.createElement('th');
+            rowHeaderCell2.textContent = rows2[j];
+            rowHeaderCell2.style.textAlign = 'left';
+            row2.appendChild(rowHeaderCell2);
+
+
+            for (var i =0; i< columns.length; i++ ) {
+
+                const cell2 = document.createElement('td');
+                const input2 = document.createElement('input');
+                input2.style.width = '100px';
+                //input.type = 'number'
+                
+
+                try {
+                  val = datas2[selectedShift][rows2[j]][columns[i]]
+                  input2.style.backgroundColor = 'lightblue';
+                  val = val ?? 0;
+
+
+
+                }catch{
+                  val = 0
+                }
+
+                input2.value = val
+                totalVariables2[i] = totalVariables2[i] + val
+                input2.readOnly = true; // make the input element read-only
+                cell2.appendChild(input2);
+                row2.appendChild(cell2);
+            }
+
+            table2.appendChild(row2);
+        }
+        const row2 = document.createElement('tr');
+        const rowHeaderCell2 = document.createElement('th');
+        rowHeaderCell2.textContent = "TOPLAM";
+        rowHeaderCell2.style.textAlign = 'left';
+        row2.appendChild(rowHeaderCell2);
+
+        for (var i =0; i< columns.length; i++ ) {
+
+                const cell2 = document.createElement('td');
+                const input2 = document.createElement('input');
+                input2.style.width = '100px';
+                input2.value = totalVariables2[i]
+                input2.style.backgroundColor = '#FD8888';
+                input2.readOnly = true; // make the input element read-only
+                cell2.appendChild(input2);
+                row2.appendChild(cell2);
+
+
+
+              }
+        table2.appendChild(row2);
+        
+
+        tableContainer1.appendChild(table1);
+        tableContainer2.appendChild(table2);
+
+        // Append the table containers to the parent container
+        tablesContainer.appendChild(tableContainer1);
+        tablesContainer.appendChild(tableContainer2);
+
+        document.body.appendChild(tablesContainer);
+
+
+}
+
+
+
+
+
+
+
+
+
+
+  function createDropdownList(items, dropdownId, changeEventHandler, title) {
+    const listContainer = document.createElement('div');
+    listContainer.classList.add('list-container');
+
+    // Add title for the list
+    const listTitle = document.createElement('h3');
+    listTitle.textContent = title;
+    listTitle.classList.add('list-title'); // Apply the .list-title class
+    listContainer.appendChild(listTitle);
+
+    // Create the dropdown list
+    const dropdown = document.createElement('select');
+    dropdown.id = dropdownId;
+
+    // Add a default blank option
+    const defaultOption = document.createElement('option');
+    defaultOption.textContent = "Seçiniz...";
+    dropdown.appendChild(defaultOption);
+
+    for (const key in items) {
+      if (items.hasOwnProperty(key)) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = items[key];
+        dropdown.appendChild(option);
+      }
+    }
+
+    // Add event listener to the dropdown list
+    dropdown.addEventListener('change', changeEventHandler);
+
+    // Append the dropdown to the container
+    listContainer.appendChild(dropdown);
+
+    // Append the container to the body
+    document.body.appendChild(listContainer);
+  }
+
+
+
+
+
+  function handleShiftSelection(event) {
+    const selectedKey = event.target.value;
+    const selectedValue = rawData.shifts[selectedKey];
+    selectedShift = selectedValue;
+    console.log("Selected Shift: " + selectedShift);
+    rawToTruck()
+    rawToHdm()
+    createTable(rawtohdm,rawtotruck,makina2 ,kamyon2,materials)
+    //createTable(rawtohdm,rawtotruck,makinalar ,kamyon_id,materials)
+
+    // Add submit button
+    var submitButton = document.createElement("button");
+    submitButton.textContent = "KM Mazot Verisi Girişi";
+    submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+    submitButton.addEventListener("click", function() {
+      console.log("basıldı")
+      window.location.href = "kmMazotVeriGirsi.html";
+     
+
+    });
+    const existingButton = document.querySelector('button');
+    if (!existingButton){
+      document.body.appendChild(submitButton);
+
+    }
+    
+  }
+
+
+
+
+
+
+</script>
+</body>
+</html>

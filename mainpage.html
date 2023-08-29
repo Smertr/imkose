@@ -28,6 +28,8 @@
   </head>
   <body>
     <div class="button-container">
+      <button id="button12">Taslak Çalışma</button>
+      <button id="button13">Taslak Çalışma Kontrol</button>
       <button id="button1">Kamyon Veri Girişi</button>
       <button id="button2">Makine Veri Girişi</button>
       <button id="button3">Yardımcı Makine Veri Girişi</button>
@@ -39,6 +41,7 @@
       <button id="button8">Günlük Notlar</button>
       <button id="button11">Saha Notları</button>
       <button id="button10">Günlük Veri Kontrolü</button>
+      <button id="button14">Sefer Detayları</button>
       
     </div>
     
@@ -166,7 +169,24 @@
         console.log('Button 11 clicked!');
       });
 
+      const button12 = document.getElementById('button12');
+      button12.addEventListener('click', () => {
+        window.location.href = "dailyTemplate.html";
+        console.log('Button 12 clicked!');
+      });
 
+      const button13 = document.getElementById('button13');
+      button13.addEventListener('click', () => {
+        window.location.href = "dailyTemplate2.html";
+        console.log('Button 13 clicked!');
+      });
+
+
+      const button14 = document.getElementById('button14');
+      button14.addEventListener('click', () => {
+        window.location.href = "dailyMatrix.html";
+        console.log('Button 14 clicked!');
+      });
 
 
     </script>

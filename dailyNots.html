@@ -223,17 +223,20 @@
 
         function logTimestamp() {
           var dateInput = document.getElementById('date');
-          var selectedDate = dateInput.value;
+
+
+            let dateString = dateInput.value;
+            const [year, month, day] = dateString.split('-').map(Number);
+            const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+            timestamp = chosenUTC/1000
           
-          timestamp = new Date(selectedDate).getTime();
-          timestamp = timestamp /1000
-          timestamp = timestamp -10800;
           
-          //timestamp = 1682802000
-          console.log(timestamp);
-          document.getElementById('getButton').style.display = 'block';
-          getButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
           
+            //timestamp = 1682802000
+            console.log(timestamp);
+            document.getElementById('getButton').style.display = 'block';
+            getButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+              
         }
 
 
