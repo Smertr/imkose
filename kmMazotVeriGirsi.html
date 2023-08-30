@@ -231,7 +231,7 @@
 
   var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
   var cognitoUser = userPool.getCurrentUser();
-
+  document.getElementById('loading-spinner').style.display = 'block';
   cognitoUser.getSession(function (err, session) {
     if (err) {
       alert(err);
@@ -398,6 +398,7 @@
         checkData()
 
 
+
       })
 
       .catch(error => console.error(error));
@@ -461,9 +462,10 @@ function getHeaders(type){
                       })
                     
               });
-                
+                document.getElementById('loading-spinner').style.display = 'none';
               })
               .catch(error => console.error(error));
+              
               return array
 
 }
