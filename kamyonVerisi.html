@@ -301,7 +301,7 @@ function getTrucks(){
                 console.log(company);
                 rows = Object.keys(data);
                 Object.values(data).forEach(value => {
-                const [model, km, marka ,tip, site] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
+                const [model, km, marka ,tip, site,yakıt] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
                 models.push(model); // add model to models array
                 kms.push(km); // add km to kms array
                 //console.log(rows);

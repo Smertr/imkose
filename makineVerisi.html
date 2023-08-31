@@ -297,7 +297,7 @@ function getTrucks(){
                 console.log(company);
                 rows = Object.keys(data);
                 Object.values(data).forEach(value => {
-                const [model, km, marka ,tip, site] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
+                const [model, km, marka ,tip, site,yakıt] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
                 models.push(model); // add model to models array
                 kms.push(km); // add km to kms array
                 //console.log(rows);
@@ -411,10 +411,10 @@ function getTable(){
                   rowElement.appendChild(rowHeader2);
                   rowElement.appendChild(rowHeader);
                   for (let j = 2; j < headers.length; j++) {
-                    if (headers[j].includes("Başlangıç")) {
+                    if (headers[j].includes("BAŞLANGIÇ")) {
                       start_value = j
                     }
-                    if (headers[j].includes("Bitiş")) {
+                    if (headers[j].includes("BİTİŞ")) {
                       end_value = j
                     }
                     var cellElement = document.createElement("td");

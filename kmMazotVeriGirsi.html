@@ -218,6 +218,7 @@
   var makinaLimits ;
   var timestamp =0;
   var message ={};
+  var fuels ={};
 
             
 
@@ -418,9 +419,11 @@
                 
                 var work =[]
                 var rows = Object.keys(data);
+                var yakıtlar =[]
                 Object.values(data).forEach(value => {
-                  const [model, km, marka ,tip, site] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
+                  const [model, km, marka ,tip, site,yakıt] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
                   work.push(km)
+                  yakıtlar.push(yakıt)
                   
                 });
                 
@@ -428,7 +431,9 @@
                 for (let i =0; i<work.length; i++){
                   works[rows[i]] = work[i]
                 }
-
+                for (let i =0; i<rows.length; i++){
+                  fuels[rows[i]] = yakıtlar[i]
+                }
               })
               .catch(error => console.error(error));
       }
@@ -465,7 +470,7 @@ function getHeaders(type){
                 document.getElementById('loading-spinner').style.display = 'none';
               })
               .catch(error => console.error(error));
-              
+
               return array
 
 }
@@ -619,18 +624,42 @@ function createTable(works,works2,row_id,row_id2) {
           }else if (columns[column] == "GÜNDÜZ MAZOT"){ 
               input.addEventListener('blur', function () {
                   const enteredValue = parseFloat(input.value) || 0;
-                  if (enteredValue > nakliyeLimits[columns[column]]) {
+                  if (fuels[row_id[rows]] != "ELEKTRİK"){
+
+                    if (enteredValue > nakliyeLimits[columns[column]]) {
                       alert(`Günlük limit: ${nakliyeLimits[columns[column]]} `);
                       input.value = '';
+                    }
+
+                  }else{
+
+                    if (enteredValue > 100000) {
+                      alert(`Günlük limit: 100000 `);
+                      input.value = '';
+                    }
+
                   }
+                  
               });
           }else{
-              input.addEventListener('blur', function () {
+             input.addEventListener('blur', function () {
                   const enteredValue = parseFloat(input.value) || 0;
-                  if (enteredValue > nakliyeLimits[columns[column]]) {
+                  if (fuels[row_id[rows]] != "ELEKTRİK"){
+
+                    if (enteredValue > nakliyeLimits[columns[column]]) {
                       alert(`Günlük limit: ${nakliyeLimits[columns[column]]} `);
                       input.value = '';
+                    }
+
+                  }else{
+
+                    if (enteredValue > 100000) {
+                      alert(`Günlük limit: 100000 `);
+                      input.value = '';
+                    }
+
                   }
+                  
               });
           }
 
@@ -729,18 +758,42 @@ function createTable(works,works2,row_id,row_id2) {
             }else if (columns[column] == "GÜNDÜZ MAZOT"){ 
               input2.addEventListener('blur', function () {
                   const enteredValue = parseFloat(input2.value) || 0;
-                  if (enteredValue > makinaLimits["GÜNDÜZ MAZOT"]) {
-                      alert(`Günlük limit: ${makinaLimits['GÜNDÜZ MAZOT']} `);
+                  if (fuels[row_id2[rows2]] != "ELEKTRİK"){
+
+                    if (enteredValue > makinaLimits[columns[column]]) {
+                      alert(`Günlük limit: ${makinaLimits[columns[column]]} `);
                       input2.value = '';
+                    }
+
+                  }else{
+
+                    if (enteredValue > 100000) {
+                      alert(`Günlük limit: 100000 `);
+                      input2.value = '';
+                    }
+
                   }
+                  
               });
           }else{
               input2.addEventListener('blur', function () {
                   const enteredValue = parseFloat(input2.value) || 0;
-                  if (enteredValue > makinaLimits["GECE MAZOT"]) {
-                      alert(`Günlük limit: ${makinaLimits['GECE MAZOT']} `);
+                  if (fuels[row_id2[rows2]] != "ELEKTRİK"){
+
+                    if (enteredValue > makinaLimits[columns[column]]) {
+                      alert(`Günlük limit: ${makinaLimits[columns[column]]} `);
                       input2.value = '';
+                    }
+
+                  }else{
+
+                    if (enteredValue > 100000) {
+                      alert(`Günlük limit: 100000 `);
+                      input2.value = '';
+                    }
+
                   }
+                  
               });
           }
 
