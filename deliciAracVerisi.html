@@ -93,6 +93,16 @@
           /*border: 1px solid gray;*/
           
         }
+
+        .table2 {
+          
+          /*border: 1px solid #4A5669;*/
+          /*border-radius: 0px;*/
+          width: 50%;
+          margin-bottom: 20px;
+          margin-top: 20px;
+        }
+        
         
 
 
@@ -539,8 +549,58 @@ function getTable(){
         //tbody.style.height = "400px"; // Adjust the height as needed
 
         document.body.appendChild(table);
+        createTotal()
         submitButton(row);
 }
+
+
+
+function createTotal(){
+
+    const table = document.createElement('table');
+    table.classList.add('table2');
+    
+
+    const footerRow = document.createElement('tr');
+    const footerCell = document.createElement('th');
+    footerCell.textContent = "TOPLAM MAZOT";
+    footerCell.style.width = '100px';
+    footerRow.appendChild(footerCell); // An empty header cell in the top-left corner
+    const footerCell2 = document.createElement('th');
+    footerCell2.textContent =fuelTotal;
+    footerCell2.style.width = '100px';
+    footerRow.appendChild(footerCell2);
+    table.appendChild(footerRow)
+    document.body.appendChild(table);
+    document.addEventListener("click", function () {
+      footerCell2.textContent =fuelTotal;
+           
+    });
+
+}
+
+
+
+ // Add a global click event listener to update the footerinput2 values
+    document.addEventListener("click", function () {
+      fuelTotal=0;
+      for (let i = 0; i < row.length; i++) {
+
+            let rowName = row[i];
+            let input_v = document.getElementById("r" + i + "c" + 4);
+            var val = input_v.value
+            if (isNaN(val)){
+              val=0
+            }
+            val = parseFloat(val) || 0;
+            fuelTotal +=  val
+            console.log(val);
+            //rowValues[headers[4]] = input_v.value;
+            
+      }
+      console.log("fuelTotal:   ",fuelTotal);
+    });
+
 
 
 
