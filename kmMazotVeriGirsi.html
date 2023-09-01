@@ -542,7 +542,10 @@ function createTable(works,works2,row_id,row_id2) {
 
   console.log("nakliyeLimits:    ",nakliyeLimits)
   console.log("makinaLimits:    ",makinaLimits) 
+  const columnSums = {};
+  var tableName ="NAKLİYE"
 
+  
   // Check if the table container already exists
   const existingTableContainer = document.querySelectorAll('.table-container, .table-container2, .submit-btn');
   existingTableContainer.forEach((container) => {
@@ -572,11 +575,13 @@ function createTable(works,works2,row_id,row_id2) {
   const headerCell = document.createElement('th');
   headerRow.appendChild(headerCell); // An empty header cell in the top-left corner
   for (const column in columns) {
+      columnSums[columns[column]] = 0; // Initialize column sums to 0
       const headerCell = document.createElement('th');
       headerCell.textContent = columns[column];
       headerCell.style.width = '100px';
       headerRow.appendChild(headerCell);
   }
+  columnSums["TOPLAM"] = 0
   table.appendChild(headerRow);
 
   // Create rows and input cells
@@ -622,8 +627,14 @@ function createTable(works,works2,row_id,row_id2) {
                   
               });
           }else if (columns[column] == "GÜNDÜZ MAZOT"){ 
+
+                  
+
+
               input.addEventListener('blur', function () {
                   const enteredValue = parseFloat(input.value) || 0;
+                  // Update the running total for the column
+                  
                   if (fuels[row_id[rows]] != "ELEKTRİK"){
 
                     if (enteredValue > nakliyeLimits[columns[column]]) {
@@ -662,7 +673,7 @@ function createTable(works,works2,row_id,row_id2) {
                   
               });
           }
-
+          sumColumnsTotal(tableName,columnSums,input,columns,column)
 
 
           if(checkIfInArray(workedVehicle,row_id[rows])){
@@ -698,7 +709,8 @@ function createTable(works,works2,row_id,row_id2) {
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+    const columnSums2 = {};
+    var tableName2 ="MAKİNA"
 
     const tableContainer2 = document.createElement('div');
     tableContainer2.classList.add('table-container2');
@@ -714,11 +726,13 @@ function createTable(works,works2,row_id,row_id2) {
     const headerCell2 = document.createElement('th');
     headerRow2.appendChild(headerCell2); // An empty header cell in the top-left corner
     for (const column in columns) {
+        columnSums2[columns[column]] = 0; // Initialize column sums to 0
         const headerCell2 = document.createElement('th');
         headerCell2.textContent = columns[column];
         headerCell2.style.width = '100px';
         headerRow2.appendChild(headerCell2);
     }
+    columnSums2["TOPLAM"] = 0
     table2.appendChild(headerRow2);
 
     // Create rows and input cells
@@ -797,20 +811,10 @@ function createTable(works,works2,row_id,row_id2) {
               });
           }
 
+          sumColumnsTotal(tableName2,columnSums2,input2,columns,column)
+
             if(checkIfInArray(workedVehicle,row_id2[rows2])){
               input2.style.backgroundColor = 'lightblue';
-              /*
-              if (columns[column] == "BİTİŞ"){
-                input2.value =  parseInt(works2[row_id2[rows2]]) + getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
-              }
-              else if (columns[column] == "GÜNDÜZ MAZOT"){
-                input2.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
-              }
-
-              else if (columns[column] == "GECE MAZOT"){
-                input2.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
-              }
-              */
 
             }
 
@@ -833,6 +837,13 @@ function createTable(works,works2,row_id,row_id2) {
 
 
 
+    
+
+
+
+    
+
+
     // Add submit button
       var submitButton = document.createElement("button");
       submitButton.textContent = "Kaydet";
@@ -852,9 +863,124 @@ function createTable(works,works2,row_id,row_id2) {
         document.body.appendChild(submitButton);
       }
 
+
+
+
+      
+      
+      createTotalTable(tableName,columnSums,columns)
+
+      createTotalTable(tableName2,columnSums2,columns)
   
 
 }
+
+
+
+
+
+function createTotalTable(tableName,columnSums,columns){
+    var keys =Object.keys(columnSums)
+    // Create the table
+    const table = document.createElement('table');
+    table.style.marginBottom = '20px'; // Adjust the value as needed
+
+
+    // Create table headers
+    var headerRow = document.createElement("tr");
+    var headerCell = document.createElement("th");
+    headerRow.appendChild(headerCell);
+    headerCell.textContent = tableName;
+    //headerRow.appendChild(headerCell); // Empty cell in first column
+    for (let i = 0; i < keys.length; i++) {
+      headerCell = document.createElement("th");
+      headerCell.textContent =keys[i];
+      headerRow.appendChild(headerCell);
+    }
+    table.appendChild(headerRow);
+
+
+
+
+
+    const footerRow = document.createElement('tr');
+    const footerCell = document.createElement('th');
+    footerCell.textContent = "TOPLAM";
+    footerCell.style.width = '100px';
+    footerRow.appendChild(footerCell); // An empty header cell in the top-left corner
+
+    const footerInputs = []; // Array to store footer input elements
+    
+
+    
+    for(var i = 0; i < keys.length; i++){
+        const footerCell = document.createElement('th');
+        const footerinput = document.createElement('input');
+        footerCell.appendChild(footerinput);
+        footerRow.appendChild(footerCell);
+        footerInputs.push(footerinput); // Add the input element to the array
+        keys.push()
+
+    }
+
+    table.appendChild(footerRow);
+    document.body.appendChild(table);
+
+
+    // Add a global click event listener to update the footerinput2 values
+    document.addEventListener("click", function () {
+
+      for(var i = 0; i < keys.length; i++){
+        const footerinput = footerInputs[i];
+        footerinput.value = columnSums[keys[i]];
+
+      }        
+    });
+
+}
+
+
+
+
+
+
+
+function sumColumnsTotal(tableName, columnSums, input, columns, column) {
+  input.addEventListener('input', function () {
+    const enteredValue = parseFloat(input.value) || 0;
+    
+    // Check if the entered value is not a number (e.g., empty string)
+    if (isNaN(enteredValue)) {
+      // If the input is not a number, set it to 0
+      input.value = '';
+      enteredValue = 0;
+    }
+    
+    if (columns[column] != "BİTİŞ") {
+      // Subtract the previous value of this cell from the total
+      const previousValue = parseFloat(input.dataset.previousValue) || 0;
+      columnSums[columns[column]] -= previousValue;
+      columnSums["TOPLAM"] -= previousValue;
+
+      // Update the data-previous-value attribute with the new value
+      input.dataset.previousValue = enteredValue;
+
+      // Add the new value to the total
+      columnSums[columns[column]] += enteredValue;
+      columnSums["TOPLAM"] += enteredValue;
+    }
+    
+    console.log(tableName, ':  ', columnSums);
+  });
+}
+
+
+
+
+
+
+
+
 
 function calculateRowTotals() {
   const tables = document.querySelectorAll('table'); // Select all tables on the page
