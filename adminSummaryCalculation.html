@@ -215,7 +215,7 @@
 
   function getHeaders() {
       const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';
-      const url2 = `${apiEndpoint2}?site=${site}&type=${type}`;
+      const url2 = `${apiEndpoint2}?site=${site}&type=${type}&company=${company}`;
 
       fetch(url2)
         .then(response => response.json())
@@ -257,7 +257,12 @@
           console.log(selectedValue)
         }
 
-
+function dateToTimesamp(stringDate){
+    const [year, month, day] = stringDate.split('-').map(Number);
+    const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+    timestamp = chosenUTC/1000
+    return timestamp
+  }
 
     let dateForm = document.getElementById('date-form');
     let confirmButton = document.getElementById('confirm-button');
@@ -265,28 +270,35 @@
     confirmButton.addEventListener("click", function(event) {
 
       updateSecondDropdown()
-      
+
+
       var startDate = document.getElementById('start-date').value;
-      var endDate = document.getElementById('end-date').value;
+      var endDate   = document.getElementById('end-date').value;
 
-      startTimestamp = new Date(startDate);
-      startTimestamp.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to zero
-      startTimestamp= startTimestamp.getTime()
-      startTimestamp = startTimestamp / 1000
+      startTimestamp = dateToTimesamp(startDate)
+      endTimestamp   = dateToTimesamp(endDate)
+      
+      
 
-      endTimestamp = new Date(endDate);
-      endTimestamp.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to zero
-      endTimestamp= endTimestamp.getTime()
-      endTimestamp= endTimestamp / 1000
-      console.log("selectedValue:",selectedValue)
+
       console.log("Start Timestamp:", startTimestamp);
       console.log("End Timestamp:", endTimestamp);
+
+      if(endTimestamp-startTimestamp > 2678400){
+
+        alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
+      }else{
+        //document.getElementById('loading-spinner').style.display = 'block';
+        getSummary()
+      }
+      
+      
 
       
       //startTimestamp = 1680296400
       //endTimestamp   =1680296400+86400
 
-      getSummary()
+      
       
     });
 
@@ -296,8 +308,8 @@
 
 
     function getSummary() {
-      const apiEndpoint = 'https://ijtwz0n6k6.execute-api.us-east-1.amazonaws.com/timeperiod_summary/timeperiod_summary_calculation';
-      const url = `${apiEndpoint}?site=${selectedValue}&ts1=${startTimestamp}&ts2=${endTimestamp}`;
+      const apiEndpoint = 'https://6srs7lpn7e.execute-api.us-east-1.amazonaws.com/calculation/summary';
+      const url = `${apiEndpoint}?site=${selectedValue}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
 
       fetch(url)
         .then(response => response.json())
@@ -348,9 +360,9 @@
         console.log("headers : ",headers) 
         console.log("sub_headers : ",sub_headers) 
         console.log("row_headers : ",row_headers) 
-        headers=["DEKAPAJ","BUNKER","STOK","TOPLAM","VERİ"]
-        sub_headers=[["SEFER","M3"],["SEFER","M3","TON"],["SEFER","M3"],["SEFER","M3","TON","KM/SAAT","LT","KW"],["LT/M3","KW/M3","LT/KM-SAAT","LT/SEFER","KM/SEFER","M3/SEFER"]]
-        row_headers =["KAMYON","TIR","YÜKLEME","ELEKTRİKLİ MAKİNE","İŞ MAKİNALARI","SAHA YARDIMCI ARAÇLARI","BİNEK","DELGİ","DİĞER","TOPLAM NAKLİYE","TOPLAM MAKİNE","TOPLAM"]
+        headers=["DEKAPAJ","KÖMÜR","STOK","TOPLAM","VERİ"]
+        sub_headers=[["SEFER","M3","TON"],["SEFER","M3","TON"],["SEFER","M3","TON"],["SEFER","M3","TON","KM_SAAT","YAKIT"],["YAKIT/M3","YAKIT/KM_SAAT","YAKIT/SEFER","KM_SAAT/SEFER","M3/SEFER"]]
+        row_headers =["KAMYON","TIR","MAKİNA","ELEKTRİKLİ MAKİNA","YARDIMCI MAKİNA","DİĞER SAHA ARAÇLARI","BİNEK ARAÇ","DELİCİ","EK YAKIT","TOPLAM NAKLİYE","TOPLAM MAKİNA","TOPLAM"]
         //createDataTable(headers, subheaders, rows, initialValue, rowHeaders)  
         createDataTable(periods[0],headers,sub_headers,row_headers.length,0,row_headers,details[0],5)
         })
@@ -443,13 +455,13 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     rowHeader.style.borderLeft = "5px double black";
     rowHeader.style.borderRight = "5px double black";
 
-    if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNE") {
+    if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNA") {
       rowHeader.style.backgroundColor = "#AEC0E9"; // Set the desired background color
     } else if (rowHeaders[i] == "TOPLAM") {
       rowHeader.style.backgroundColor = "#BED8C9"; // Set the desired background color
     } else if (rowHeaders[i] == "KAMYON" || rowHeaders[i] == "TIR") {
       rowHeader.style.backgroundColor = "#FADFBA"; // Set the desired background color
-    } else if (rowHeaders[i] == "YÜKLEME" || rowHeaders[i] == "ELEKTRİKLİ MAKİNE") {
+    } else if (rowHeaders[i] == "MAKİNA" || rowHeaders[i] == "ELEKTRİKLİ MAKİNA") {
       rowHeader.style.backgroundColor = "#FA9999"; // Set the desired background color
     }
 
@@ -457,13 +469,13 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     for (var j = 0; j < headers.length; j++) {
       for (var k = 0; k < subheaders[j].length; k++) {
         var td = document.createElement("td");
-        if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNE") {
+        if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNA") {
           td.style.backgroundColor = "#AEC0E9"; // Set the desired background color
         } else if (rowHeaders[i] == "TOPLAM") {
           td.style.backgroundColor = "#BED8C9"; // Set the desired background color
         } else if (rowHeaders[i] == "KAMYON" || rowHeaders[i] == "TIR") {
           td.style.backgroundColor = "#FADFBA"; // Set the desired background color
-        } else if (rowHeaders[i] == "YÜKLEME" || rowHeaders[i] == "ELEKTRİKLİ MAKİNE") {
+        } else if (rowHeaders[i] == "MAKİNA" || rowHeaders[i] == "ELEKTRİKLİ MAKİNA") {
           td.style.backgroundColor = "#FA9999"; // Set the desired background color
         }
 
