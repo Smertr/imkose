@@ -3,9 +3,7 @@
 <head>
   <title>Özet Veri</title>
   <style>
-
-    /* Submit button styles */
-        .submit-btn {
+       .submit-btn {
           display: inline-block;
           padding: 10px 20px;
           background-color: #2c3e50;
@@ -23,9 +21,51 @@
         .submit-btn:active {
           transform: translateY(1px);
         }
+        #loading-spinner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999; /* Make sure it's above other content */
+      }
 
+      .spinner {
+        position: fixed;
+        top: 45%;
+        left: 45%;
+        
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        border-top: 5px solid #387ed8;
+        border-right: 5px solid transparent;
+        animation: spin 1s linear infinite;
+      }
 
-    #date-form {
+       @keyframes spin {
+         to {
+           transform: rotate(360deg);
+         }
+       }     
+
+         .dropdown-label {
+            display: block;
+            margin-top: 10px;
+            font-size: 15px;
+          }
+
+          .dropdown-list {
+            font-size: 15ğx;
+            width: 200px;
+            padding: 5px;
+            margin-bottom: 10px;
+          }
+        #date-form {
           display: flex;
           flex-direction: row;
           justify-content: center;
@@ -34,7 +74,7 @@
           padding: 10px;
           border: 1px solid gray;
           border-radius: 5px;
-          max-width: 300px;
+          max-width: 500px;
           font-family: Arial, sans-serif;
 }
         }
@@ -85,15 +125,26 @@
   
 </head>
 <body>
-
-
-  <div class="container" id="date-form" style="display: none;">
-    <label for="date">Tarih Seçin:</label>
-    <input type="date" id="date" name="date" onchange="logTimestamp()">
+  <!-- Add a loading spinner -->
+  <div id="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
   </div>
-  
+  <h1>Lütfen Seçiniz</h1>
+
+ 
+  <form id="date-form" style="display: none;">
+        <label for="date">Tarih Seçiniz:</label>
+
+        <input type="date" id="start-date">
+        <input type="date" id="end-date">
+        
+        
+  </form>
+  <button id="confirm-button"style="display: none; submit-btn">Sorgula</button>
+
+
   <table id="dataTable"></table>
-  <button id = "getButton" style="display: none;" onclick="getSummary()">GETİR</button>
+  <button style="display: none;" onclick="readSaveValues()">Kaydet</button>
 
 
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
@@ -104,88 +155,151 @@
   <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
 <script>
-
-  var company = "";
+  let type="all";
+  let company =""
   var site    = "";
+  var sites   = []
   let timestamp=0;
   let headers =[];
   let sub_headers =[];
   let row_headers =[];
   let raw_data ={};
+  var selectedValue =""
 
   // Check the user info on AWS and get the details of user
-  var data = {
-    UserPoolId  : 'us-east-1_1uKtiajQH',
-    ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
-  };
+   // Check the user info on AWS and get the details of user
+      // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
 
-  var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
-  var cognitoUser = userPool.getCurrentUser();
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+      // Show the loading spinner
+      document.getElementById('loading-spinner').style.display = 'block';
 
-  cognitoUser.getSession(function(err, session) {
-          if (err) {
-            alert(err);
-            return;
-          }
-
-
-          // Add the User's Id Token to the Cognito credentials login map.
-          AWS.config.region   = 'us-east-1';
-          AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
-              IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
-              Logins: {
-                'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
-              }
-          });
-
-          cognitoUser.getUserAttributes(function(err, result) {
-              if (err) {
-
-                console.log(err);
-                window.location.href = "login.html";
+      cognitoUser.getSession(function(err, session) {
+                 
+                if (err) {
+                alert(err);
                 return;
-              }else{
-              company = result[3].getValue();
-              site    = result[2].getValue();
-              
-              console.log(result);
-              console.log(company);
-              console.log(site);
-              document.getElementById('date-form').style.display = 'block';
               }
-             
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              
+
+              cognitoUser.getUserAttributes(function(err, result) {
+
+                  if (err) {
+                    console.log(err);
+                    return;
+                  }
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  console.log(result);
+                  console.log(site);
+                  //getHeaders()
+
+                  // Hide the loading spinner
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  //document.getElementById('firstDropdown').style.display = 'block';
+                  document.getElementById('date-form').style.display = 'block';
+                  document.getElementById('confirm-button').style.display = 'block';
+                 
+              });
+    
+      });
+
+  function getHeaders() {
+      const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';
+      const url2 = `${apiEndpoint2}?site=${site}&type=${type}&company=${company}`;
+
+      fetch(url2)
+        .then(response => response.json())
+        .then(data => {
+          
+          
+          Object.keys(data).forEach(location => {
+            const locationData = data[location];
+            
+            sites.push(location)   // şantiye isimleri
+
           });
-
-  });
-
-
-    function logTimestamp() {
-
-
-      
-      var dateInput = document.getElementById('date');
-      var selectedDate = dateInput.value;
-      
-      timestamp = new Date(selectedDate).getTime();
-      timestamp = timestamp /1000
-      timestamp = timestamp -10800;
-      
-      //timestamp = 1682802000
-      console.log(timestamp);
-      document.getElementById('getButton').style.display = 'block';
-      getButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
-
-
-      
+          console.log(sites)
+          dropdownlists()
+          
+        })
+        .catch(error => console.error(error));
     }
 
 
-    
+ 
+function dateToTimesamp(stringDate){
+    const [year, month, day] = stringDate.split('-').map(Number);
+    const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+    timestamp = chosenUTC/1000
+    return timestamp
+  }
+
+    let dateForm = document.getElementById('date-form');
+    let confirmButton = document.getElementById('confirm-button');
+    confirmButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+    confirmButton.addEventListener("click", function(event) {
+      document.getElementById('loading-spinner').style.display = 'block';
+      
+
+
+      var startDate = document.getElementById('start-date').value;
+      var endDate   = document.getElementById('end-date').value;
+
+      startTimestamp = dateToTimesamp(startDate)
+      endTimestamp   = dateToTimesamp(endDate)
+      
+      
+
+
+      console.log("Start Timestamp:", startTimestamp);
+      console.log("End Timestamp:", endTimestamp);
+
+      if(endTimestamp-startTimestamp > 2678400){
+
+        alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
+         document.getElementById('loading-spinner').style.display = 'none';
+      }else{
+        
+
+        getSummary()
+        document.getElementById('loading-spinner').style.display = 'none';
+      }
+      
+      
+
+      
+      //startTimestamp = 1680296400
+      //endTimestamp   =1680296400+86400
+
+      
+      
+    });
+
+
+
+
 
 
     function getSummary() {
-      const apiEndpoint = 'https://277j9cg1jf.execute-api.us-east-1.amazonaws.com/calculation/summary_calculation';
-      const url = `${apiEndpoint}?site=${site}&ts=${timestamp}`;
+      const apiEndpoint = 'https://6srs7lpn7e.execute-api.us-east-1.amazonaws.com/calculation/summary';
+      const url = `${apiEndpoint}?site=${site}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
 
       fetch(url)
         .then(response => response.json())
@@ -236,13 +350,11 @@
         console.log("headers : ",headers) 
         console.log("sub_headers : ",sub_headers) 
         console.log("row_headers : ",row_headers) 
-        headers=["DEKAPAJ","BUNKER","STOK","TOPLAM","VERİ"]
-        sub_headers=[["SEFER","M3"],["SEFER","M3","TON"],["SEFER","M3"],["SEFER","M3","TON","KM/SAAT","LT","KW"],["LT/M3","KW/M3","LT/KM-SAAT","LT/SEFER","KM/SEFER","M3/SEFER"]]
-        row_headers =["KAMYON","TIR","YÜKLEME","ELEKTRİKLİ MAKİNE","İŞ MAKİNALARI","SAHA YARDIMCI ARAÇLARI","BİNEK","DELGİ","DİĞER","TOPLAM NAKLİYE","TOPLAM MAKİNE","TOPLAM"]
+        headers=["DEKAPAJ","KÖMÜR","STOK","TOPLAM","VERİ"]
+        sub_headers=[["SEFER","M3","TON"],["SEFER","M3","TON"],["SEFER","M3","TON"],["SEFER","M3","TON","KM_SAAT","YAKIT"],["YAKIT/M3","YAKIT/KM_SAAT","YAKIT/SEFER","KM_SAAT/SEFER","M3/SEFER"]]
+        row_headers =["KAMYON","TIR","MAKİNA","ELEKTRİKLİ MAKİNA","YARDIMCI MAKİNA","DİĞER SAHA ARAÇLARI","BİNEK ARAÇ","DELİCİ","EK YAKIT","TOPLAM NAKLİYE","TOPLAM MAKİNA","TOPLAM"]
         //createDataTable(headers, subheaders, rows, initialValue, rowHeaders)  
         createDataTable(periods[0],headers,sub_headers,row_headers.length,0,row_headers,details[0],5)
-        createDataTable(periods[1],headers,sub_headers,row_headers.length,0,row_headers,details[1],5)
-        createDataTable(periods[2],headers,sub_headers,row_headers.length,0,row_headers,details[2],5)
         })
         .catch(error => console.error(error));
     }
@@ -255,6 +367,11 @@ function formatNumberWithCommas(number) {
 
 function createDataTable(title, headers, subheaders, rows, initialValue, rowHeaders, details, numBlankRows) {
 
+  var existingTable = document.getElementById("dataTable");
+  if (existingTable) {
+    existingTable.parentNode.removeChild(existingTable); // Remove the existing table
+  }
+
   // Add download button
   var downloadButton = document.createElement("button");
   downloadButton.textContent = "Download Excel";
@@ -263,7 +380,8 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     downloadExcel(title, headers, subheaders, rows, rowHeaders, details);
   });
 
-  var table = document.getElementById("dataTable");
+  var table = document.createElement("table");
+  table.id = "dataTable"; // Set the id of the new table
   var thead = document.createElement("thead");
   var tbody = document.createElement("tbody");
 
@@ -333,13 +451,13 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     rowHeader.style.borderLeft = "5px double black";
     rowHeader.style.borderRight = "5px double black";
 
-    if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNE") {
+    if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNA") {
       rowHeader.style.backgroundColor = "#AEC0E9"; // Set the desired background color
     } else if (rowHeaders[i] == "TOPLAM") {
       rowHeader.style.backgroundColor = "#BED8C9"; // Set the desired background color
     } else if (rowHeaders[i] == "KAMYON" || rowHeaders[i] == "TIR") {
       rowHeader.style.backgroundColor = "#FADFBA"; // Set the desired background color
-    } else if (rowHeaders[i] == "YÜKLEME" || rowHeaders[i] == "ELEKTRİKLİ MAKİNE") {
+    } else if (rowHeaders[i] == "MAKİNA" || rowHeaders[i] == "ELEKTRİKLİ MAKİNA") {
       rowHeader.style.backgroundColor = "#FA9999"; // Set the desired background color
     }
 
@@ -347,13 +465,13 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     for (var j = 0; j < headers.length; j++) {
       for (var k = 0; k < subheaders[j].length; k++) {
         var td = document.createElement("td");
-        if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNE") {
+        if (rowHeaders[i] == "TOPLAM NAKLİYE" || rowHeaders[i] == "TOPLAM MAKİNA") {
           td.style.backgroundColor = "#AEC0E9"; // Set the desired background color
         } else if (rowHeaders[i] == "TOPLAM") {
           td.style.backgroundColor = "#BED8C9"; // Set the desired background color
         } else if (rowHeaders[i] == "KAMYON" || rowHeaders[i] == "TIR") {
           td.style.backgroundColor = "#FADFBA"; // Set the desired background color
-        } else if (rowHeaders[i] == "YÜKLEME" || rowHeaders[i] == "ELEKTRİKLİ MAKİNE") {
+        } else if (rowHeaders[i] == "MAKİNA" || rowHeaders[i] == "ELEKTRİKLİ MAKİNA") {
           td.style.backgroundColor = "#FA9999"; // Set the desired background color
         }
 
@@ -388,6 +506,7 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
   for (var i = 0; i < numBlankRows; i++) {
     table.appendChild(document.createElement("br"));
   }
+  document.body.appendChild(table);
 }
 
 
@@ -443,6 +562,7 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     link.click();
     URL.revokeObjectURL(link.href);
 }
+
 
 
 
