@@ -2,8 +2,11 @@
 <html>
 <head>
   <title>Çalışma Alanı</title>
+  <!-- Include Handsontable library -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+
   <style>
-    /* Add some basic styling */
     .list-container {
 
     border: 1px solid #ccc;
@@ -36,20 +39,6 @@
   }
 
 
-    /* Add this style for the table container */
-  .table-container {
-    height: 500px; /* Set the desired height for the container */
-    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
-    width: 100%;
-  }
-  /* Style for the row headers container */
-  .row-headers {
-    position: sticky;
-    left: 0;
-    top: 0;
-    background-color: #f1f1f1; /* Customize the background color */
-    z-index: 1;
-  }
   .table-container2 {
     height: 500px; /* Set the desired height for the container */
     overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
@@ -97,6 +86,7 @@
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
+    margin-top: 30px; /* Add a small margin between the tables */
   }
   
   .submit-btn:hover {
@@ -107,6 +97,15 @@
     transform: translateY(1px);
   }
 
+  td.custom-cell {
+    color: #fff;
+    background-color: #37bc6c;
+  }
+  .custom-table thead th:nth-child(even),
+  .custom-table tbody tr:nth-child(odd) th {
+    background-color: #d7f1e1;
+  }
+
   
   </style>
 </head>
@@ -115,6 +114,9 @@
 <!-- AWS JavaScript SDKs -->
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+<!-- Container for Handsontable -->
+
+
 
 <script>
   var type = "";
@@ -133,6 +135,7 @@
   var selectedMaterial = ""; // Global variable to store the selected material
   var nakliyeLimits;
   var limits;
+  var truck_types;
 
   // Check the user info on AWS and get the details of the user
   var data = {
@@ -175,6 +178,273 @@
     });
 
   });
+
+
+
+
+
+
+
+
+function createTable2(){
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = 'example';
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+ // Data for the table (rows with counting numbers)
+      const temp_data =[]
+      for (let i=0 ; i< kamyon_id.length; i++){
+          const temp_data_2 =[]
+          for (let j=0 ; j<makinalar.length; j++){
+            try {
+              temp_data_2.push(savedJsonObject[kamyon_id[i]][makinalar[j]])
+            }catch{
+              temp_data_2.push("")
+              console.log("veri yok")
+            }
+            
+          }
+          temp_data.push(temp_data_2)
+      }
+
+
+
+
+    const container = document.querySelector('#example');
+    const hot = new Handsontable(container, {
+      data : temp_data,
+
+      rowHeaders: kamyon_id,
+      colHeaders: makinalar,
+      height: '500px',
+      rowHeaderWidth: 75,
+      colHeaderWidth: 75,
+      colWidths: 100,
+      type: 'numeric',
+
+      licenseKey: 'non-commercial-and-evaluation',   // for non-commercial use only
+
+
+      afterChange: function (changes, source) {
+        // Check if the change was made by the user (not programmatic)
+        if (source === 'edit') {
+            changes.forEach(([row, col, oldVal, newVal]) => {
+              if (typeof newVal === 'number' && newVal > limits) {
+                alert(`Günlük limit: ${limits} `);
+                hot.setDataAtCell(row, col, "");
+
+              }
+            });
+         
+          createSummary(hot)
+          
+        }
+      },
+  });
+}
+
+
+
+
+
+
+
+
+function calculateRowTotals(hot) {
+  //rowTotals = {}
+  //const table = document.getElementById("example");
+  //const rows = table.getElementsByTagName('tr');
+  var totals = 0;
+  if (hot) {
+    hot.getData().forEach((row, rowIndex) => {
+      let rowTotal = 0;
+      const rowHeader = kamyon_id[rowIndex];
+      row.forEach((cellValue, colIndex) => {
+        if (cellValue){
+          
+          const colHeader = makinalar[colIndex];
+          rowTotal += parseFloat(cellValue) || 0;
+          totals += parseFloat(cellValue) || 0;
+
+
+          //console.log('Row Header:', rowHeader);
+          //console.log('Column Header:', colHeader);
+          //console.log('Cell Value:', cellValue);
+        }
+         
+        
+      });
+      if (rowTotal>0){
+              rowTotals[rowHeader] = rowTotal; // Use the row header as the key instead of "row" + i
+
+      }else {
+              delete rowTotals[rowHeader]; // Remove the row header if the row total is 0
+      }
+      
+
+
+    });
+
+    rowTotals["TOPLAM"] = totals
+      console.log(rowTotals); // Di
+      }
+    }
+
+function getUniqueValues(arr) {
+  // Use the Set data structure to store unique values
+  const uniqueValues = new Set(arr);
+  
+  // Convert the Set back to an array
+  const uniqueArray = Array.from(uniqueValues);
+  
+  return uniqueArray;
+}  
+
+
+
+
+
+
+function calculateColumnTotals2(hot){
+      
+      truck_types.push("TOPLAM")
+      const numColumns = makinalar.length
+
+      for (const mak in makinalar) {
+          const temp = {}
+          for (const trc in truck_types){
+            temp[truck_types[trc]] = 0
+
+          }
+          columnTotalsObject[makinalar[mak]] = temp
+      }
+      const temp = {}
+      for (const trc in truck_types){
+        temp[truck_types[trc]] = 0
+
+      }
+      columnTotalsObject["TOPLAM"] = temp
+      
+
+
+
+      if (hot) {
+          hot.getData().forEach((row, rowIndex) => {
+            var tip = kamyon_type[rowIndex]
+            row.forEach((cellValue, colIndex) => {
+              if (cellValue){
+                  var mak = makinalar[colIndex]
+                  console.log(cellValue)
+                  
+                  columnTotalsObject[mak][tip] += parseFloat(cellValue) || 0;
+                  columnTotalsObject[mak]["TOPLAM"] += parseFloat(cellValue) || 0;                    
+
+                  columnTotalsObject["TOPLAM"][tip] += parseFloat(cellValue) || 0;
+                  columnTotalsObject["TOPLAM"]["TOPLAM"] += parseFloat(cellValue) || 0;         
+                  }
+
+            })
+          })
+      }
+
+
+
+      for (const mak in makinalar){
+        if (columnTotalsObject[makinalar[mak]]["TOPLAM"] ==0 ){
+          delete columnTotalsObject[makinalar[mak]]; // Remove the row header if the row total is 0
+        }
+      }
+      console.log(columnTotalsObject)
+    
+
+  }
+
+
+
+
+
+
+
+function calculateColumnTotals(hot) {
+  const table = document.querySelector('table');
+  const rows = table.getElementsByTagName('tr');
+  const headerCells = rows[0].getElementsByTagName('th');
+  const numColumns = headerCells.length - 1; // Subtract 1 to exclude the first header cell
+
+  const columnTotals = Array(numColumns).fill(0);
+  const tırTotals = Array(numColumns).fill(0);
+  const kamyonTotals = Array(numColumns).fill(0);
+
+  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
+    const cells = rows[i].getElementsByTagName('td');
+    var plaka = rows[i].textContent
+    var tip = kamyonlar[rows[i].textContent]
+    //console.log("celss: ",plaka, "  ", tip)
+
+    for (let j = 0; j < cells.length; j++) {
+      const cellValue = parseInt(cells[j].querySelector('input').value);
+      if (!isNaN(cellValue)) {
+
+            if (tip == "KAMYON"){
+              kamyonTotals[j] += cellValue;
+            }else{
+              tırTotals[j] += cellValue;
+
+        columnTotals[j] += cellValue;
+      }
+    }
+  }
+
+  const columnHeaderNames = [];
+  for (let j = 0; j < numColumns; j++) {
+    columnHeaderNames.push(headerCells[j + 1].textContent); // Start from index 1 to exclude the first header cell
+  }
+  var total_temp ={}
+  total_temp["toplam"]  = 0
+  total_temp["kamyon"]  = 0
+  total_temp["tır"]     = 0
+
+
+  columnHeaderNames.forEach((name, index) => {
+    var temp ={}
+    temp["toplam"]  = columnTotals[index]
+    temp["kamyon"]  = kamyonTotals[index]
+    temp["tır"]     = tırTotals[index]
+
+    total_temp["toplam"]  += columnTotals[index]
+    total_temp["kamyon"]  += kamyonTotals[index]
+    total_temp["tır"]     += tırTotals[index]
+
+    //columnTotalsObject[name] = columnTotals[index];
+    if (temp["toplam"] >0){
+      columnTotalsObject[name] = temp;
+
+    }else{
+      delete columnTotalsObject[name]; // Remove the row header if the row total is 0
+    }
+    
+  });
+
+  columnTotalsObject["TOPLAM"] = total_temp;
+  console.log("toplam: " , columnTotalsObject["TOPLAM"])
+  //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
+  
+}
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -227,12 +497,14 @@ function getHeaders(type){
         kamyon_type = Object.values(kamyonlar)
         console.log(rawData);
         console.log(Object.values(rawData.shifts).length);
-
+        truck_types = getUniqueValues(kamyon_type)
         
         console.log(kamyonlar);
         console.log(makinalar);
         console.log(kamyon_id);
         console.log(kamyon_type);
+        console.log(truck_types);
+
         
 
         checkData()
@@ -346,7 +618,8 @@ function handleMaterialSelection(event) {
 function checkSelected(){
   if (selectedMaterial != "" && selectedShift != ""){
       uploadJsonObject(); // Upload the JSON object if necessary
-      createTable(); // Always call createTable() when material is selected
+      //createTable(); // Always call createTable() when material is selected
+      createTable2()
   }
 }
 
@@ -363,147 +636,41 @@ function getLimits(){
 
 
 
-function getTableValues(){
+function getTableValues(hot){
 
-  const table = document.querySelector('table');
-  const rows = table.getElementsByTagName('tr');
+  if (hot) {
+    hot.getData().forEach((row, rowIndex) => {
+      var temp ={}
+      row.forEach((cellValue, colIndex) => {
+        if (cellValue){
+          temp[makinalar[colIndex]] =parseFloat(cellValue) || 0;
+          
 
-  
+        }
+         
+        
+      });
+      if (Object.keys(temp).length >0){
 
-  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
-    const cells = rows[i].getElementsByTagName('td');
-    const rowHeader = rows[i].getElementsByTagName('th')[0].textContent;
-    temp ={}
-    for (let j = 0; j < cells.length; j++) {
-      const cellValue = parseInt(cells[j].querySelector('input').value);
-      if (!isNaN(cellValue)) {
-        temp[makinalar[j]] =cellValue
-        //temp[makinalar] += cellValue
-      }
-    }
-
-    if (Object.keys(temp).length >0){
-
-      message[rowHeader] = temp; // Use the row header as the key instead of "row" + i
-    }
-    
-  }
-
-  console.log(message); // Display row totals with row header names in the console as a JSON object
-
-}
-
-
-
-
-
-function calculateRowTotals() {
-  //rowTotals = {}
-  const table = document.querySelector('table');
-  const rows = table.getElementsByTagName('tr');
-  
-
-  
-  var totals = 0;
-  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
-    const cells = rows[i].getElementsByTagName('td');
-    let rowTotal = 0;
-
-    for (let j = 0; j < cells.length; j++) {
-      const cellValue = parseInt(cells[j].querySelector('input').value);
-      if (!isNaN(cellValue)) {     
-        rowTotal += cellValue;
-        totals += cellValue
+      message[kamyon_id[rowIndex]] = temp; // Use the row header as the key instead of "row" + i
       }
 
-    }
+      
 
-    const rowHeader = rows[i].getElementsByTagName('th')[0].textContent;
-    if (rowTotal>0){
-      rowTotals[rowHeader] = rowTotal; // Use the row header as the key instead of "row" + i
+    });
 
-    }else {
-      delete rowTotals[rowHeader]; // Remove the row header if the row total is 0
-    }
-    
   }
-
-  rowTotals["TOPLAM"] = totals
-  console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
+  console.log(message); 
 }
-
-
-
-
-
-function calculateColumnTotals() {
-  const table = document.querySelector('table');
-  const rows = table.getElementsByTagName('tr');
-  const headerCells = rows[0].getElementsByTagName('th');
-  const numColumns = headerCells.length - 1; // Subtract 1 to exclude the first header cell
-
-  const columnTotals = Array(numColumns).fill(0);
-  const tırTotals = Array(numColumns).fill(0);
-  const kamyonTotals = Array(numColumns).fill(0);
-
-  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
-    const cells = rows[i].getElementsByTagName('td');
-    var plaka = rows[i].textContent
-    var tip = kamyonlar[rows[i].textContent]
-    //console.log("celss: ",plaka, "  ", tip)
-
-    for (let j = 0; j < cells.length; j++) {
-      const cellValue = parseInt(cells[j].querySelector('input').value);
-      if (!isNaN(cellValue)) {
-
-            if (tip == "KAMYON"){
-              kamyonTotals[j] += cellValue;
-            }else{
-              tırTotals[j] += cellValue;
-            }
-
-
-
-        columnTotals[j] += cellValue;
-      }
-    }
-  }
-
-  const columnHeaderNames = [];
-  for (let j = 0; j < numColumns; j++) {
-    columnHeaderNames.push(headerCells[j + 1].textContent); // Start from index 1 to exclude the first header cell
-  }
-  var total_temp ={}
-  total_temp["toplam"]  = 0
-  total_temp["kamyon"]  = 0
-  total_temp["tır"]     = 0
-
-
-  columnHeaderNames.forEach((name, index) => {
-    var temp ={}
-    temp["toplam"]  = columnTotals[index]
-    temp["kamyon"]  = kamyonTotals[index]
-    temp["tır"]     = tırTotals[index]
-
-    total_temp["toplam"]  += columnTotals[index]
-    total_temp["kamyon"]  += kamyonTotals[index]
-    total_temp["tır"]     += tırTotals[index]
-
-    //columnTotalsObject[name] = columnTotals[index];
-    if (temp["toplam"] >0){
-      columnTotalsObject[name] = temp;
-
-    }else{
-      delete columnTotalsObject[name]; // Remove the row header if the row total is 0
-    }
-    
-  });
-
-  columnTotalsObject["TOPLAM"] = total_temp;
-  console.log("toplam: " , columnTotalsObject["TOPLAM"])
-  //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
   
-}
+
+
+
+
+
+
+
+
 
 
 
@@ -617,10 +784,10 @@ function createTable() {
 
 
 
-function createSummary(){
+function createSummary(hot){
 
-  calculateRowTotals();
-  calculateColumnTotals();
+  calculateRowTotals(hot);
+  calculateColumnTotals2(hot);
 
 
   // Remove all existing .table-container2 elements from the document.body
@@ -780,7 +947,7 @@ function createSummary(){
     console.log("basıldı")
     //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
     //console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
-    getTableValues()
+    getTableValues(hot)
     saveJsonObject()
 
     //post_data()
@@ -832,40 +999,6 @@ function deleteJsonObject(key) {
 
 
 
-
-/*
-
-function post_data(){
-
-
-    const apiEndpoint = 'https://hn9c4zcow2.execute-api.us-east-1.amazonaws.com/post_data/template_data';
-    const datasetParam = encodeURIComponent(JSON.stringify(message));
-    const url = `${apiEndpoint}?shift=${selectedShift}&material=${selectedMaterial}&dataset=${datasetParam}&company=${company}&site=${site}`;
-
-
-    var xhttp = new XMLHttpRequest();
-    
-    const confirmed = confirm(`Emin misiniz?`);
-        if (confirmed) { // only proceed if user confirmed
-                xhttp.open("GET",url, true);
-                xhttp.send();
-                xhttp.onreadystatechange = function() {
-                if (this.readyState === 4) {
-                  if (this.status === 200) {
-                    // Request completed successfully
-                    alert("Veriler Gönderildi");
-                  } else {
-                    // An error occurred
-                    alert("Hata Oluştu");
-                  }
-                }
-              };
-                //document.body.innerHTML = '';
-                //window.location.href = "mainpage.html";
-            }
-                              
-}
-*/
 
 
 </script>
