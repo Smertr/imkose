@@ -360,6 +360,7 @@ function getTable(){
             inputElement.id = "r" + 0 + "c" + j;            
             inputElement.type = 'number'
             inputElement.max  = headers_limit_up[j];
+            inputElement.value =0;
             inputElement.addEventListener("input", checkInput); // Add event listener for input changes
             console.log(headers_limit_up[j])
             cellElement.appendChild(inputElement);
