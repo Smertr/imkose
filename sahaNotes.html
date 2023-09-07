@@ -179,7 +179,7 @@
       let isValidRow = []; // array to track which rows are valid or not
 
       let message={};
-      let todaysData ={};
+      let todaysData;
       let timestamp = 0;
       let date      = "";
       
@@ -276,7 +276,24 @@ function getHeaders(){
 }
 
 
+function getNotes(){
+        const apiEndpoint1 = 'https://rp193fhcgj.execute-api.us-east-1.amazonaws.com/get_field_notes/get_field_notes';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&start_ts=${timestamp}&end_ts=${timestamp}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                todaysData = Object.values(data)[0]
+                console.log(todaysData)
+                
+                  table()
+                
+                
 
+              })
+              .catch(error => console.error(error));
+      }
 
 
 
@@ -321,7 +338,8 @@ function getTable(){
                                              location.reload();
                                             }else{
                                                 button1.addEventListener("click", function() {
-                                                  table()
+                                                  getNotes()
+                                                  //table()
                                                 })
                                             }
             }else{
@@ -360,7 +378,12 @@ function getTable(){
             inputElement.id = "r" + 0 + "c" + j;            
             inputElement.type = 'number'
             inputElement.max  = headers_limit_up[j];
-            inputElement.value =0;
+            try{
+              inputElement.value =todaysData[headers[j]];
+            }catch{
+              inputElement.value =0;  
+            }
+            
             inputElement.addEventListener("input", checkInput); // Add event listener for input changes
             console.log(headers_limit_up[j])
             cellElement.appendChild(inputElement);
