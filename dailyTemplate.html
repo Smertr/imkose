@@ -301,8 +301,7 @@ function getUniqueValues(arr) {
   // Convert the Set back to an array
   const uniqueArray = Array.from(uniqueValues);
   
-  return uniqueArray;
-}  
+  return uniqueArray;}  
 
 
 
@@ -338,7 +337,7 @@ function calculateColumnTotals2(hot){
             row.forEach((cellValue, colIndex) => {
               if (cellValue){
                   var mak = makinalar[colIndex]
-                  console.log(cellValue)
+                  console.log("calculateColumnTotals2:    ",cellValue)
                   
                   columnTotalsObject[mak][tip] += parseFloat(cellValue) || 0;
                   columnTotalsObject[mak]["TOPLAM"] += parseFloat(cellValue) || 0;                    
@@ -433,8 +432,7 @@ function calculateColumnTotals(hot) {
   console.log("toplam: " , columnTotalsObject["TOPLAM"])
   //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
   
-}
-}
+}}
 
 
 
@@ -477,9 +475,7 @@ function getHeaders(type){
                 
               })
               .catch(error => console.error(error));
-              return array
-
-}
+              return array}
 
 
 
@@ -510,10 +506,10 @@ function getHeaders(type){
         checkData()
 
         // Create Shifts Dropdown
-        createDropdownList(rawData.shifts, 'shiftDropdown', handleShiftSelection, 'Vardiya');
+        createDropdownList("shift_id",rawData.shifts, 'shiftDropdown', handleShiftSelection, 'Vardiya');
 
         // Create Materials Dropdown
-        createDropdownList(rawData.materials, 'materialDropdown', handleMaterialSelection, 'Malzeme');
+        createDropdownList("material_id",rawData.materials, 'materialDropdown', handleMaterialSelection, 'Malzeme');
       })
       .catch(error => console.error(error));
   }
@@ -552,9 +548,11 @@ function getHeaders(type){
 
 
 
-  function createDropdownList(items, dropdownId, changeEventHandler, title) {
+  function createDropdownList(dropdownListContainer,items, dropdownId, changeEventHandler, title) {
     const listContainer = document.createElement('div');
+    const containerId = dropdownListContainer; // Add an id
     listContainer.classList.add('list-container');
+    listContainer.id = containerId; // Set the id
 
     // Add title for the list
     const listTitle = document.createElement('h3');
@@ -598,28 +596,51 @@ function getHeaders(type){
   const selectedValue = rawData.shifts[selectedKey];
   selectedShift = selectedValue;
   console.log("Selected Shift: " + selectedShift);
+  console.log("Selected Material: " + selectedMaterial);
   //uploadJsonObject(); // Upload the JSON object if necessary
   //createTable(); // Always call createTable() when material is selected
   checkSelected()
-  getLimits()
 }
 
 function handleMaterialSelection(event) {
   const selectedKey = event.target.value;
   const selectedValue = rawData.materials[selectedKey];
   selectedMaterial = selectedValue;
+  console.log("Selected Shift: " + selectedShift);
   console.log("Selected Material: " + selectedMaterial);
   
   //uploadJsonObject(); // Upload the JSON object if necessary
   //createTable(); // Always call createTable() when material is selected
   checkSelected()
-  getLimits()
+  
 }
 function checkSelected(){
   if (selectedMaterial != "" && selectedShift != ""){
+      var lineBreak = document.createElement("br");
+      var textElement = document.createElement("div");
+        textElement.textContent = selectedShift + " , " + selectedMaterial+ "  ALANINA VERİ GİRİŞİ YAPILIYOR!";
+        // Append the element to the page
+        document.body.appendChild(lineBreak);
+        document.body.appendChild(textElement);
+        document.body.appendChild(lineBreak);
+
+
+
+      savedJsonObject={};
+      message ={}
+      getLimits()
       uploadJsonObject(); // Upload the JSON object if necessary
       //createTable(); // Always call createTable() when material is selected
       createTable2()
+      const listContainer = document.getElementById('shift_id');
+      if (listContainer) {
+        listContainer.style.display = 'none';
+      }
+      const listContainer2 = document.getElementById('material_id');
+      if (listContainer2) {
+        listContainer2.style.display = 'none';
+      }
+      
   }
 }
 
@@ -637,30 +658,25 @@ function getLimits(){
 
 
 function getTableValues(hot){
-
+  message={};
+ 
   if (hot) {
     hot.getData().forEach((row, rowIndex) => {
       var temp ={}
       row.forEach((cellValue, colIndex) => {
         if (cellValue){
           temp[makinalar[colIndex]] =parseFloat(cellValue) || 0;
-          
-
+          console.log(cellValue)
         }
-         
-        
       });
       if (Object.keys(temp).length >0){
-
       message[kamyon_id[rowIndex]] = temp; // Use the row header as the key instead of "row" + i
       }
-
-      
-
     });
 
   }
-  console.log(message); 
+  console.log("message:    ",message); 
+  saveJsonObject()
 }
   
 
@@ -669,6 +685,47 @@ function getTableValues(hot){
 
 
 
+
+
+
+function saveJsonObject(){
+    var saved = selectedShift+","+selectedMaterial
+    // Save JSON object to local storage${limits}
+    localStorage.setItem(saved, JSON.stringify(message));
+    alert(`Mesaj Kaydedildi. Toplam veri adedi: ${Object.keys(message).length} `)
+    console.log(saved, "    message:     ",message)
+    message={};
+    avedJsonObject={};
+
+}
+
+
+
+function uploadJsonObject(){
+    var saved = selectedShift+","+selectedMaterial
+    // Retrieve JSON object from local storage
+    const savedJsonString = localStorage.getItem(saved);
+    if (savedJsonString) {
+      savedJsonObject = JSON.parse(savedJsonString);
+      console.log(savedJsonObject); // This will log the retrieved JSON object
+      const confirmed = confirm(`Seçilen alanda kayıtlı veri var! Silmek istermisiniz`);
+      if (confirmed) {
+        deleteJsonObject(saved)
+      }else{
+        console.log("savedJsonObject:   ",savedJsonObject)
+        message={};
+      }
+    } else {
+      console.log('No saved data found.');
+      savedJsonObject={};
+    }
+}
+
+
+function deleteJsonObject(key) {
+  localStorage.removeItem(key);
+  console.log(`Deleted JSON object with key: ${key}`);
+}
 
 
 
@@ -772,9 +829,7 @@ function createTable() {
   document.body.appendChild(tableContainer);
 
 
-  
-
-}
+  }
 
 
 
@@ -948,9 +1003,8 @@ function createSummary(hot){
     //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
     //console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
     getTableValues(hot)
-    saveJsonObject()
+    
 
-    //post_data()
   });
   const existingButton = document.querySelector('button');
   if (!existingButton){
@@ -962,40 +1016,8 @@ function createSummary(hot){
 }
 
 
-function saveJsonObject(){
-    var saved = selectedShift+","+selectedMaterial
-    // Save JSON object to local storage
-    localStorage.setItem(saved, JSON.stringify(message));
-    alert("mesaj kaydedildi")
-    console.log("savessss:     ",saved)
-
-}
 
 
-
-function uploadJsonObject(){
-    var saved = selectedShift+","+selectedMaterial
-    // Retrieve JSON object from local storage
-    const savedJsonString = localStorage.getItem(saved);
-    if (savedJsonString) {
-      savedJsonObject = JSON.parse(savedJsonString);
-      console.log(savedJsonObject); // This will log the retrieved JSON object
-      const confirmed = confirm(`Seçilen alanda kayıtlı veri var! Silmek istermisiniz`);
-      if (confirmed) {
-        deleteJsonObject(saved)
-      }else{
-        console.log(savedJsonObject)
-      }
-    } else {
-      console.log('No saved data found.');
-    }
-}
-
-
-function deleteJsonObject(key) {
-  localStorage.removeItem(key);
-  console.log(`Deleted JSON object with key: ${key}`);
-}
 
 
 
