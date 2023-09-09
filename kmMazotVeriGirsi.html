@@ -2,83 +2,11 @@
 <html>
 <head>
   <title>Çalışma Alanı Kontrol</title>
+  <!-- Include Handsontable library -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
   <style>
-    /* Add some basic styling */
-    .list-container {
-
-    border: 1px solid #ccc;
-    padding: 3px;
-    border-radius: 5px;
-    margin-bottom: 10px; /* Add some margin between the dropdowns */
-    width: 200px; /* Adjust the width as needed */
-    display: flex;
-    align-items: center; /* Align items vertically in the container */
-    height: 50px;
-
-    }
-    .list-title {
-    margin-right: 8px; /* Add space between the title and the dropdown list */
-    margin-left: 8px;
-  }
     
-
-    .list-container select {
-    height: 32px; /* Adjust the height as needed */
-    font-size: 14px; /* Adjust the font size as needed */
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 5px;
-  }
-
-  /* Style the dropdown options */
-  .list-container select option {
-    /* Additional styles for the dropdown options, if needed */
-  }
-
-
-    /* Add this style for the table container */
-  .table-container {
-    height: 500px; /* Set the desired height for the container */
-    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
-    width: 35%;
-    margin-right: 50px; /* Add some margin between the dropdowns */
-    margin-left: 20px; /* Add some margin between the dropdowns */
-  }
-
-  .table-container2 {
-    height: 500px; /* Set the desired height for the container */
-    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
-    width: 35%;
-
-    margin-right: 50px;
-    margin-left: 150px;
-  }
-
-  .table-container3 {
-    height: 500px; /* Set the desired height for the container */
-    overflow-y: scroll; /* Add a vertical scrollbar when the table overflows */
-    width: 15%;
-
-    margin-top: 30px; /* Add a small margin between the tables */
-    margin-bottom: 30px; /* Add a small margin between the tables */
-  }
-
-  /* Add this style for the table header cells */
-  table th {
-    position: sticky;
-    top: 0;
-    background-color: #f1f1f1; /* Customize the background color as needed */
-
-  }
-
-  /* Add this style for the row header cells */
-  table th:first-child {
-    position: sticky;
-    left: 0;
-    background-color: #f1f1f1; /* Customize the background color as needed */
-
-  }
-
 
 
   
@@ -174,6 +102,16 @@
    }
 
 
+.table-container {
+      display: flex; /* Use flexbox to display tables side by side */
+    }
+
+    /* CSS for each table */
+    .table {
+      flex: 1; /* Allow tables to grow equally within the container */
+      margin-right: 20px; /* Add space between tables (adjust as needed) */
+    }
+
 
 
   
@@ -194,7 +132,20 @@
     <div class="spinner"></div>
   </div>
 
+ <div class="table-container">
+    <!-- Create the first table with id "NAKLİYE" -->
+    <div class="table" id="NAKLİYE">
+      <!-- Table content will be inserted here using JavaScript -->
+    </div>
+    <!-- Create the second table with id "MAKİNA" -->
+    <div class="table" id="MAKİNA">
+      <!-- Table content will be inserted here using JavaScript -->
+    </div>
+  </div>
 
+  <br>
+  <br>
+  <div class="table" id="Totals_table"></div>
 
 
 <script>
@@ -219,7 +170,11 @@
   var timestamp =0;
   var message ={};
   var fuels ={};
-
+  var works ={}
+  var nakliyeTable;
+  var makinaTable;
+  var nakliyeTotals ={};
+  var makinaTotals ={};
             
 
 
@@ -320,7 +275,7 @@
         }
       }
     } 
-    console.log("temp:    ",temp)
+    console.log("workedVehicle:    ",workedVehicle)
     //console.log("workedVehicle:    ",workedVehicle)
 
 
@@ -330,7 +285,16 @@
       submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
       submitButton.addEventListener("click", function() {
         console.log("basıldı")
-        createTable(kms,hours,kamyon_id,makinalar)
+
+        // Create the first table with id "NAKLİYE" inside the container
+        nakliyeTable = createTable2("NAKLİYE", works, kamyon_id,nakliyeLimits,nakliyeTotals);
+
+        // Create the second table with id "MAKİNA" inside the container
+        makinaTable = createTable2("MAKİNA", works, makinalar,makinaLimits,makinaTotals);
+        document.body.removeChild(submitButton);
+        createDateForm()
+
+
         
 
       });
@@ -361,19 +325,22 @@
 
 
         });
-
+         
 
 
         Object.values(rawData.types).forEach(type => {
           if (type=="NAKLİYE" ||  type=="MAKİNA"){
             vehicleTypes.push(type)
             if (type=="NAKLİYE"){
-              getTrucks(kms,type)
+              getTrucks(type)
               nakliyeLimits = getHeaders("NAKLİYE")
+              console.log( "nakliyeLimits:  ",nakliyeLimits)
+              
 
             }else{
-              getTrucks(hours,type)
-              makinaLimits = getHeaders("NAKLİYE")
+              getTrucks(type)
+              makinaLimits = getHeaders("MAKİNA")
+              console.log( "makinaLimits:   ", makinaLimits)
             }
           }
         
@@ -385,17 +352,10 @@
         kamyon_type = Object.values(kamyonlar)
         console.log("rawData:     " ,vehicleTypes);
         
-        /*
-        console.log(kamyonlar);
-        console.log(makinalar);
-        console.log(kamyon_id);
-        console.log(kamyon_type);
-        */
 
         
 
-        // Create Shifts Dropdown
-        //createDropdownList(vehicleTypes, 'shiftDropdown', handleShiftSelection, 'Araç Tipi');
+
         checkData()
 
 
@@ -408,7 +368,7 @@
 
 
 
-  function getTrucks(works,type){
+  function getTrucks(type){
         const apiEndpoint1 = 'https://3oddda3bhd.execute-api.us-east-1.amazonaws.com/gethdms/hdms';    
         const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${type}`;
         console.log(url1)
@@ -434,6 +394,9 @@
                 for (let i =0; i<rows.length; i++){
                   fuels[rows[i]] = yakıtlar[i]
                 }
+                console.log("works:   ",works)
+                console.log("fuels:   ",fuels)
+                console.log("yakıtlar:   ",yakıtlar)
               })
               .catch(error => console.error(error));
       }
@@ -476,70 +439,179 @@ function getHeaders(type){
 }
 
 
+function createTotalTable2(table1, table2){
+    var divElement = document.createElement('div');
 
+      // Set the id attribute to "example"
+      divElement.id = "Totals_table";
+      document.body.appendChild(divElement);
 
-
-  function createDropdownList(items, dropdownId, changeEventHandler, title) {
-    const listContainer = document.createElement('div');
-    listContainer.classList.add('list-container');
-
-    // Add title for the list
-    const listTitle = document.createElement('h3');
-    listTitle.textContent = title;
-    listTitle.classList.add('list-title'); // Apply the .list-title class
-    listContainer.appendChild(listTitle);
-
-    // Create the dropdown list
-    const dropdown = document.createElement('select');
-    dropdown.id = dropdownId;
-
-    // Add a default blank option
-    const defaultOption = document.createElement('option');
-    defaultOption.textContent = "Seçiniz...";
-    dropdown.appendChild(defaultOption);
-
-    for (const key in items) {
-      if (items.hasOwnProperty(key)) {
-        const option = document.createElement('option');
-        option.value = key;
-        option.textContent = items[key];
-        dropdown.appendChild(option);
+      const başlıklar = Object.keys(table1)
+      const tables =[table1,table2]
+      const temp_data = [];
+      for (let i = 0; i < tables.length; i++) {
+        const temp_data_2 = [];
+        for (let j = 0; j < başlıklar.length; j++) {
+          temp_data_2.push(tables[i][başlıklar[j]])
+        }
+        temp_data.push(temp_data_2);
       }
+
+
+      const container = document.querySelector('#Totals_table');
+      const hot = new Handsontable(container, {
+          data: temp_data,
+          rowHeaders: ["NAKLİYE","MAKİNA"],
+          colHeaders: başlıklar,
+          height: '100px',
+          rowHeaderWidth: 130,
+          colHeaderWidth: 75,
+          colWidths: 130,
+          licenseKey: 'non-commercial-and-evaluation', // for non-commercial use only
+      });
+
+      function updateTotalTable2() {
+      // Update the temp_data array based on the new values in table1 and table2
+      for (let i = 0; i < tables.length; i++) {
+        for (let j = 0; j < başlıklar.length; j++) {
+          temp_data[i][j] = tables[i][başlıklar[j]];
+        }
+      }
+      // Update the Handsontable instance with the new data
+      hot.loadData(temp_data);
     }
 
-    // Add event listener to the dropdown list
-    dropdown.addEventListener('change', changeEventHandler);
-
-    // Append the dropdown to the container
-    listContainer.appendChild(dropdown);
-
-    // Append the container to the body
-    document.body.appendChild(listContainer);
-  }
-
-
-
-
-  function handleShiftSelection(event) {
-    const selectedKey = event.target.value;
-    const selectedValue = vehicleTypes[selectedKey];
-    selectedVehicle = selectedValue;
-    console.log("Selected Shift: " + selectedVehicle);
-
-  }
-
-
-
-function getRandomNumber() {
-  return Math.floor(Math.random() * 41); // Generates a random number between 0 and 40 (inclusive)
+    // Assuming you have a way to listen for changes in table1 and table2
+    // For example, using event listeners
+     updateTotalTable2()
 }
 
 
 
 
 
-function createTable(works,works2,row_id,row_id2) {
 
+function createTable2(table_id, works, equipment ,limits,totals) {
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = table_id;
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+
+  // Data for the table (rows with counting numbers)
+  const temp_data = [];
+  for (let i = 0; i < equipment.length; i++) {
+    const temp_data_2 = [];
+    for (let j = 0; j < columns.length; j++) {
+      if (columns[j] == "BAŞLANGIÇ") {
+        temp_data_2.push(works[equipment[i]]);
+      } else {
+        temp_data_2.push("");
+        console.log("veri yok");
+      }
+    }
+    temp_data.push(temp_data_2);
+  }
+  const savedVehicles =[];
+  
+  console.log("savedVehicles:   ",savedVehicles)
+  function firstRowRenderer(instance, td, row, col, prop, value, cellProperties) {
+    Handsontable.renderers.TextRenderer.apply(this, arguments);
+    td.style.fontWeight = 'bold';
+    td.style.color = 'green';
+    td.style.background = '#CEC';
+  }
+
+  const container = document.querySelector('#' + table_id);
+
+  const hot = new Handsontable(container, {
+    data: temp_data,
+    rowHeaders: equipment,
+    colHeaders: columns,
+    height: '500px',
+    rowHeaderWidth: 130,
+    colHeaderWidth: 75,
+    colWidths: 130,
+    type: 'numeric',
+    licenseKey: 'non-commercial-and-evaluation', // for non-commercial use only
+    cells: function (row, col, prop) {
+      const cellProperties = {};
+
+      // Make all cells in the first column read-only
+      if (col === 0) {
+        cellProperties.readOnly = true;
+      }
+      for (let i =0; i <equipment.length; i++){
+        for (let j =0; j <workedVehicle.length; j++){
+            if (equipment[i] === workedVehicle[j]){
+              if (row === i) {
+                cellProperties.renderer = firstRowRenderer; // uses function directly
+
+              }
+            }
+        }
+      }
+      
+      
+      return cellProperties;
+    },
+
+
+    afterChange: function (changes, source) {
+        // Check if the change was made by the user (not programmatic)
+        if (source === 'edit') {
+
+            changes.forEach(([row, col, oldVal, newVal]) => {
+             
+              console.log("row:",row)
+              console.log("col:",col)
+              console.log("oldVal:",oldVal)
+              console.log("newVal:",newVal)
+
+              sumColumnsTotal2(hot,equipment,totals)
+              console.log("limit:    ",limits[columns[col]])
+
+              if(columns[col] === "BİTİŞ" && (newVal- hot.getDataAtCell(row, col - 1)  < 0 ||  newVal- hot.getDataAtCell(row, col - 1)  >100  )){
+                alert(`Günlük limit: ${limits[columns[col]]} Geçici olarak ${hot.getDataAtCell(row, col - 1)} değeri girildi!`);
+                hot.setDataAtCell(row, col, hot.getDataAtCell(row, col - 1));
+              }else if(columns[col] === columns[col] && newVal >limits[columns[col]]) {
+                alert(`Günlük limit: ${limits[columns[col]]} `);
+                hot.setDataAtCell(row, col, "");
+              }
+            });
+          };
+          
+        },
+
+
+           
+  });
+  
+  return hot
+}
+
+      
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function createTable(works,works2,row_id,row_id2) {
+  
   console.log("nakliyeLimits:    ",nakliyeLimits)
   console.log("makinaLimits:    ",makinaLimits) 
   const columnSums = {};
@@ -678,18 +750,7 @@ function createTable(works,works2,row_id,row_id2) {
 
           if(checkIfInArray(workedVehicle,row_id[rows])){
             input.style.backgroundColor = 'lightblue';
-            /*
-            if (columns[column] == "BİTİŞ"){
-              input.value =  parseInt(works[row_id[rows]]) + getRandomNumber()   ////////////////////////////////////////////////////////////////////////////////////
-            }
-            else if (columns[column] == "GÜNDÜZ MAZOT"){
-                input.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
-              }
 
-              else if (columns[column] == "GECE MAZOT"){
-                input.value =   getRandomNumber()  ////////////////////////////////////////////////////////////////////////////////////
-              }
-            */
           }
 
           cell.appendChild(input);
@@ -942,7 +1003,49 @@ function createTotalTable(tableName,columnSums,columns){
 
 
 
+function sumColumnsTotal2(hot,equipment,totals) { 
+  totals["GÜNDÜZ MAZOT"] =0
+  totals["GECE MAZOT"] =0
+  totals["TOPLAM MAZOT"] =0
+  totals["TOPLAM KW"] =0
+  totals["TOPLAM KM_SAAT"] =0
+  if (hot) {
+    hot.getData().forEach((row, rowIndex) => {
+      const rowHeader = equipment[rowIndex];
+      temp_dict ={}
+      row.forEach((cellValue, colIndex) => {
+        if (cellValue && columns[colIndex] != "BAŞLANGIÇ") {
+          var val =parseFloat(cellValue) || 0;
 
+          var arac = equipment[rowIndex]
+          var yakıt = fuels[arac]
+          
+
+
+          if (columns[colIndex] != "BİTİŞ"){
+            if(yakıt == "ELEKTRİK"){
+              totals["TOPLAM KW"] += val;
+            }else{
+              totals[columns[colIndex]] += val;
+              totals["TOPLAM MAZOT"] += val;
+            }
+            
+          }
+          else if (columns[colIndex] == "BİTİŞ"){
+            totals["TOPLAM KM_SAAT"]  += val-parseFloat(row[colIndex - 1]);;
+            
+          }
+
+        }
+        
+      });
+      
+
+  })
+  console.log("totals:   ",totals)
+  createTotalTable2(nakliyeTotals, makinaTotals)
+}
+}
 
 
 function sumColumnsTotal(tableName, columnSums, input, columns, column) {
@@ -978,8 +1081,26 @@ function sumColumnsTotal(tableName, columnSums, input, columns, column) {
 
 
 
+function calculateRowTotals2(hot,equipment) { 
+  if (hot) {
+    hot.getData().forEach((row, rowIndex) => {
+      const rowHeader = equipment[rowIndex];
+      temp_dict ={}
+      row.forEach((cellValue, colIndex) => {
+        if (cellValue){
 
+          const colHeader = columns[colIndex];
+          temp_dict[colHeader] = parseFloat(cellValue) || 0;
+        }
+        
+      });
+      if (Object.keys(temp_dict).length >1)
+        rowTotals[rowHeader] = temp_dict
+      
+    });
 
+  }
+}
 
 
 function calculateRowTotals() {
@@ -1054,7 +1175,9 @@ function createDateForm() {
         event.preventDefault(); // Prevent form submission
         logTimestamp(input.value); // Call the function to log the timestamp with chosen date
         message["temp"] = temp;
-        calculateRowTotals()
+        calculateRowTotals2(nakliyeTable,kamyon_id)
+        calculateRowTotals2(makinaTable,makinalar)
+        console.log(rowTotals)
         message["rowTotals"] = rowTotals
         sendMessage(message)
       });
