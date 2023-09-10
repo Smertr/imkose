@@ -573,12 +573,21 @@ function createTable2(table_id, works, equipment ,limits,totals) {
 
               sumColumnsTotal2(hot,equipment,totals)
               console.log("limit:    ",limits[columns[col]])
+              console.log("fark:    ",newVal- hot.getDataAtCell(row, col - 1))
+              console.log("arac:    ",fuels[equipment[row]])
+              var mazot_limit = 0
+              if(fuels[equipment[row]] === "ELEKTRİK") {
+                mazot_limit = 50000
 
-              if(columns[col] === "BİTİŞ" && (newVal- hot.getDataAtCell(row, col - 1)  < 0 ||  newVal- hot.getDataAtCell(row, col - 1)  >100  )){
+              }else{
+                mazot_limit = limits[columns[col]]
+              }
+
+              if(columns[col] === "BİTİŞ" && (newVal- hot.getDataAtCell(row, col - 1)  < 0 ||  newVal- hot.getDataAtCell(row, col - 1)  >limits[columns[col]]  )){
                 alert(`Günlük limit: ${limits[columns[col]]} Geçici olarak ${hot.getDataAtCell(row, col - 1)} değeri girildi!`);
                 hot.setDataAtCell(row, col, hot.getDataAtCell(row, col - 1));
-              }else if(columns[col] === columns[col] && newVal >limits[columns[col]]) {
-                alert(`Günlük limit: ${limits[columns[col]]} `);
+              }else if(columns[col] === columns[col] && newVal >mazot_limit) {
+                alert(`Günlük limit: ${mazot_limit} `);
                 hot.setDataAtCell(row, col, "");
               }
             });
