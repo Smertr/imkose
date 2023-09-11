@@ -571,10 +571,19 @@ function createTable2(table_id, works, equipment ,limits,totals) {
               console.log("oldVal:",oldVal)
               console.log("newVal:",newVal)
 
-              sumColumnsTotal2(hot,equipment,totals)
+              var arac = equipment[row]
+              var last_col = columns[col]
+              var fark=0
+              if (last_col ==="BİTİŞ"){
+                fark = newVal- hot.getDataAtCell(row, col - 1)
+              }
+              
+              sumColumnsTotal2(hot,equipment,totals,arac,fark,last_col)
+
               console.log("limit:    ",limits[columns[col]])
               console.log("fark:    ",newVal- hot.getDataAtCell(row, col - 1))
-              console.log("arac:    ",fuels[equipment[row]])
+              console.log("ARAC:    ",equipment[row])
+              console.log("YAKIT:    ",fuels[equipment[row]])
               var mazot_limit = 0
               if(fuels[equipment[row]] === "ELEKTRİK") {
                 mazot_limit = 50000
@@ -608,6 +617,69 @@ function createTable2(table_id, works, equipment ,limits,totals) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+function sumColumnsTotal2(hot,equipment,totals,arac,fark,last_col) { 
+  totals["GÜNDÜZ MAZOT"] =0
+  totals["GECE MAZOT"] =0
+  totals["TOPLAM MAZOT"] =0
+  totals["TOPLAM KW"] =0
+  totals["TOPLAM KM_SAAT"] =0
+  totals["SON ARAC"] =arac
+  totals["KM/SAAT FARKI"] =0
+  if (hot) {
+    hot.getData().forEach((row, rowIndex) => {
+      const rowHeader = equipment[rowIndex];
+      temp_dict ={}
+      row.forEach((cellValue, colIndex) => {
+        if (cellValue && columns[colIndex] != "BAŞLANGIÇ") {
+          var val =parseFloat(cellValue) || 0;
+
+          var arac = equipment[rowIndex]
+          var yakıt = fuels[arac]
+          
+
+
+          if (columns[colIndex] != "BİTİŞ"){
+            if(yakıt == "ELEKTRİK"){
+              totals["TOPLAM KW"] += val;
+            }else{
+              totals[columns[colIndex]] += val;
+              totals["TOPLAM MAZOT"] += val;
+            }
+            
+          }
+          else if (columns[colIndex] == "BİTİŞ"){
+            totals["TOPLAM KM_SAAT"]  += val-parseFloat(row[colIndex - 1]);            
+          }
+
+          if (last_col === "BİTİŞ"){
+              totals["KM/SAAT FARKI"] =fark
+            }
+
+          
+
+        }
+        
+      });
+      
+
+  })
+  console.log("totals:   ",totals)
+  createTotalTable2(nakliyeTotals, makinaTotals)
+}
+}
 
 
 
@@ -1012,49 +1084,12 @@ function createTotalTable(tableName,columnSums,columns){
 
 
 
-function sumColumnsTotal2(hot,equipment,totals) { 
-  totals["GÜNDÜZ MAZOT"] =0
-  totals["GECE MAZOT"] =0
-  totals["TOPLAM MAZOT"] =0
-  totals["TOPLAM KW"] =0
-  totals["TOPLAM KM_SAAT"] =0
-  if (hot) {
-    hot.getData().forEach((row, rowIndex) => {
-      const rowHeader = equipment[rowIndex];
-      temp_dict ={}
-      row.forEach((cellValue, colIndex) => {
-        if (cellValue && columns[colIndex] != "BAŞLANGIÇ") {
-          var val =parseFloat(cellValue) || 0;
-
-          var arac = equipment[rowIndex]
-          var yakıt = fuels[arac]
-          
 
 
-          if (columns[colIndex] != "BİTİŞ"){
-            if(yakıt == "ELEKTRİK"){
-              totals["TOPLAM KW"] += val;
-            }else{
-              totals[columns[colIndex]] += val;
-              totals["TOPLAM MAZOT"] += val;
-            }
-            
-          }
-          else if (columns[colIndex] == "BİTİŞ"){
-            totals["TOPLAM KM_SAAT"]  += val-parseFloat(row[colIndex - 1]);;
-            
-          }
 
-        }
-        
-      });
-      
 
-  })
-  console.log("totals:   ",totals)
-  createTotalTable2(nakliyeTotals, makinaTotals)
-}
-}
+
+
 
 
 function sumColumnsTotal(tableName, columnSums, input, columns, column) {
