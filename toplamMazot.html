@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Toplam Günlük Mazot</title>
+  <!-- Include Handsontable library -->
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+  <style>
+    
+
+
+  
+
+
+  /* Submit button styles */
+  .submit-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #2c3e50;
+    color: white;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 30px; /* Add a small margin between the tables */
+    margin-bottom: 10px; /* Add a small margin between the tables */
+  }
+  
+  .submit-btn:hover {
+    background-color: #34495e;
+  }
+  
+  .submit-btn:active {
+    transform: translateY(1px);
+  }
+
+
+  #date-form {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          margin-top: 30px;
+          margin-bottom: 5px;
+          padding: 10px;
+          border: 1px solid gray;
+          border-radius: 5px;
+          max-width: 300px;
+          font-family: Arial, sans-serif;
+}
+  
+  
+  #date-form label {
+    margin-right: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    max-width: 100px;
+  }
+  
+  #date-form input[type="date"] {
+    border: 1px solid gray;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 20px;
+    font-family: Arial, sans-serif;
+    margin-top: 5px;
+    margin-bottom: 5px;
+  }
+
+  /* Add this style for the loading spinner */
+/* Add this style for the loading spinner */
+#loading-spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Make sure it's above other content */
+}
+
+.spinner {
+  position: fixed;
+  top: 45%;
+  left: 45%;
+  
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border-top: 5px solid #387ed8;
+  border-right: 5px solid transparent;
+  animation: spin 1s linear infinite;
+}
+
+   @keyframes spin {
+     to {
+       transform: rotate(360deg);
+     }
+   }
+
+
+.table-container {
+      display: flex; /* Use flexbox to display tables side by side */
+    }
+
+    /* CSS for each table */
+    .table {
+      flex: 1; /* Allow tables tosgrow equally within the container */
+      margin-right: 20px; /* Add space between tables (adjust as needed) */
+      max-width: 50%;
+    }
+
+
+
+  
+  </style>
+</head>
+<body>
+
+<!-- AWS JavaScript SDKs -->
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.3/pako.min.js"></script>
+
+
+
+
+<!-- Add a loading spinner -->
+  <div id="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+
+
+ <form id="date-form" style="display: none;">
+        <label for="date">Tarih Seçiniz:</label>
+        <input type="date" id="date" value="<%= today %>">
+  </form>
+
+  <br>
+  <br>
+ <div class="table-container">
+    <div class="table" id="MAZOT">
+    </div>
+    <div class="table" id="ARAC">
+    </div>
+  </div>
+
+  <br>
+  <br>
+
+
+
+
+<script>
+  document.getElementById('loading-spinner').style.display = 'block';
+  
+  var company = "";
+  var site = "";
+  var metaData;
+  var mazotData;
+  var mazotAracData;
+  var timestamp=0;
+  var mazotTable;
+  var mazotAracTable;
+  var message={}
+  var first_touch = 0; // tabloya dokunulduğunaanlar
+  var state;
+  
+            
+
+
+
+  // Check the user info on AWS and get the details of the user
+  var data = {
+    UserPoolId: 'us-east-1_1uKtiajQH',
+    ClientId: '4rigc1mv6tt9h9kn5dvf8p859f'
+  };
+
+  var userPool = new AmazonCognitoIdentity.CognitoUserPool(data);
+  var cognitoUser = userPool.getCurrentUser();
+  
+  cognitoUser.getSession(function (err, session) {
+    if (err) {
+      alert(err);
+      return;
+    }
+
+    // Add the User's Id Token to the Cognito credentials login map.
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',
+      Logins: {
+        'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()
+      }
+    });
+
+    cognitoUser.getUserAttributes(function (err, result) {
+      if (err) {
+        console.log(err);
+        return;
+      }
+
+      company = result[3].getValue();
+      site = result[2].getValue();
+      console.log(result);
+      console.log(site);
+      console.log(company);
+
+      getMetaData();
+
+      getTimeTable()
+
+      // Hide the loading spinner
+    });
+
+  });
+
+
+
+function getMetaData() {
+    const apiEndpoint = 'https://sxl4s33mtd.execute-api.us-east-1.amazonaws.com/get_meta/get_metadata';
+    const url = `${apiEndpoint}?site=${site}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        metaData = data[0];
+        console.log("metaData:    ",metaData)
+      })
+
+      .catch(error => console.error(error));
+  }
+
+
+function getTimeTable(){
+  document.getElementById('loading-spinner').style.display = 'none';
+  document.getElementById('date-form').style.display = 'block';
+  date.addEventListener("change", function(event) {
+
+    let dateString = event.target.value;
+    const [year, month, day] = dateString.split('-').map(Number);
+    const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+    timestamp = chosenUTC/1000
+    
+    console.log("Timestamp:", timestamp);
+   
+    getMazot()
+
+    var submitButton = document.createElement("button");
+    submitButton.textContent = "Kaydet";
+    submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+    submitButton.addEventListener("click", function() {
+      const rowHeaders = mazotTable.getRowHeader(); 
+      const colHeaders = mazotTable.getColHeader(); 
+      const raw_values = mazotTable.getData()
+      console.log(rowHeaders)
+      console.log(colHeaders)
+      console.log(raw_values)
+      message={}
+      if(first_touch){
+        for(let i = 0; i < colHeaders.length; i++){
+          temp_array={}
+          for(let j = 0; j < rowHeaders.length; j++){
+            temp_array[rowHeaders[j]] = raw_values[j][i]
+
+          }
+          message[colHeaders[i]] = temp_array
+
+      }
+      }
+      
+
+
+
+      console.log(message)
+      if(Object.keys(message).length >0){
+        sendMessage()
+      }else{
+        alert("Verileri Değiştirmediniz!")
+      }
+
+      
+    })
+    const existingButton = document.querySelector('button');
+    if (!existingButton){
+      document.body.appendChild(submitButton);
+    }
+
+        
+  });
+}; 
+
+
+
+
+
+function getMazot() {
+    
+    const apiEndpoint = 'https://fwug2yzle6.execute-api.us-east-1.amazonaws.com/fuels/get_fuels';
+    const url = `${apiEndpoint}?site=${site}&company=${company}&ts=${timestamp}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        mazotData = data[0];
+        mazotAracData = data[1];
+        state = mazotData["state"]
+        delete mazotData["company"]; // Remove the row header if the row total is 0
+        delete mazotData["site"]; // Remove the row header if the row total is 0
+        delete mazotData["ts"]; // Remove the row header if the row total is 0
+        delete mazotData["state"]; // Remove the row header if the row total is 0
+        console.log("mazotData:    ",mazotData)
+        console.log("mazotAracData:    ",mazotAracData)
+        
+
+        mazotTable = createTables("MAZOT",mazotData)
+        mazotAracTable =createTables("ARAC",mazotAracData)
+        //createTable2("ARAC",mazotAracData)
+        
+
+
+      })
+
+      .catch(error => {
+        alert("Seçilen Tarihte Değer Bulunamadı!")
+        console.error(error)
+      });
+}
+
+
+function createTables(table_id,data) {
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = table_id;
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+  var rowheaders =[]
+  var cells =[]
+  var columnheaders=[]
+  // Data for the table (rows with counting numbers)
+  if(table_id === "MAZOT") {
+          columnheaders = Object.keys(data) // günlü aylık genel
+          
+          var temp_rowheaders = ["DEVİR","GELEN","KULLANILAN","GÖNDERİLEN","KALAN"]//Object.keys(data)
+          
+          for (let i = 0; i < temp_rowheaders.length; i++){
+                  var row1    = temp_rowheaders[i]
+                  if(row1 != "GÖNDERİLEN"){
+                          rowheaders.push(row1)
+                          var temp_cells =[]
+                          for(let j = 0; j < columnheaders.length; j++){
+                              var column  = columnheaders[j]   
+                              temp_cells.push(data[column][row1])                           
+                          }
+                          cells.push(temp_cells)
+                  }else{
+                    row2 =Object.keys(data[columnheaders[0]][row1])
+                    for(let k = 0; k < row2.length; k++){
+                      rowheaders.push(row2[k])
+                      var temp_cells =[]
+                      for(let j = 0; j < columnheaders.length; j++){
+                          var column  = columnheaders[j]  
+                          var column  = columnheaders[j]   
+                          temp_cells.push(data[column][row1][row2[k]])                                    
+                      }
+                      cells.push(temp_cells)
+                    }
+                  }
+          }
+  }else if (table_id === "ARAC"){    
+          columnheaders.push("ADET") 
+          var temp_rows = Object.keys(data)
+          for (let i = 0; i < temp_rows.length; i++) {
+              rowheaders.push(temp_rows[i])
+              cells.push([data[temp_rows[i]]])
+            }
+    }
+
+
+
+console.log("rowheaders:   ",rowheaders)
+console.log("columnheaders:   ",columnheaders)
+console.log("cells:   ",cells)
+const container = document.querySelector('#' + table_id);
+  let calculateFlag = true; // Flag to control calculation
+  
+  const hot = new Handsontable(container, {
+    data: cells,
+    rowHeaders: rowheaders,
+    colHeaders: columnheaders,
+    height: '200px',
+    rowHeaderWidth: 150,
+    colHeaderWidth: 75,
+    colWidths: 130,
+    type: 'numeric',
+    rowHeaderAlign: 'htLeft', // Align row headers to the left
+    licenseKey: 'non-commercial-and-evaluation', // for non-commercial use only
+    cells: function (row, col) {
+      const cellProperties = {};
+      if (col >= 1 ) {
+        cellProperties.readOnly = true;
+      }else{
+        if (row === 0 || row === 2 ||row === rowheaders.length - 1) {
+        cellProperties.readOnly = true;
+      }
+      }
+      // Make the first cell (row 0) and last cell (last row) readonly
+      
+
+      return cellProperties;
+    },
+  });
+
+  // Calculate and update the last row based on your requirements
+  hot.addHook('afterChange', function(changes, source) {
+    if (source === 'edit') {
+      var row_id;
+      var col_id;
+      var old_Val;
+      var new_Val;
+      var selected_row; 
+
+      
+
+
+
+      if (calculateFlag) {
+        changes.forEach(([row, col, oldVal, newVal]) => {
+              row_id   = row;
+              col_id   = col;
+              old_Val  = oldVal;
+              new_Val  = newVal;
+              selected_row = rowheaders[row_id]
+
+              console.log("row:",row_id)
+              console.log("col:",col_id)
+              console.log("oldVal:",old_Val)
+              console.log("newVal:",new_Val)
+              console.log("selected_row:",selected_row)
+        })
+        const rowCount = hot.countRows();
+        const colCount = hot.countCols();
+        let result = parseFloat(hot.getDataAtCell(0, 0));
+        if (rowCount > 2 && colCount > 0) {
+          // Subtract all values from the first value, excluding the second and last value
+          
+          for (let row = 1; row < rowCount - 1; row++) {
+            const cellValue = parseFloat(hot.getDataAtCell(row, 0));
+            if (row === 1){
+              result += cellValue;
+            }else{
+              result -= cellValue;
+            }
+            
+          }
+          
+        }
+        hot.setDataAtCell(rowCount - 1, 0, result);
+        hot.setDataAtCell(rowCount - 1, 1, result);
+        hot.setDataAtCell(rowCount - 1, 2, result);
+        hot.setDataAtCell(row_id, 1, (cells[row_id][1]-old_Val+new_Val)    );
+        hot.setDataAtCell(row_id, 2, (cells[row_id][2]-old_Val+new_Val)    );
+
+        // Kullanılan yakıt otomatik geldiği için tablo değiştiği anda gücellenecektir
+        if(!first_touch && !state){
+          hot.setDataAtCell(2, 1, (cells[2][1]+data["GÜNLÜK"]["KULLANILAN"])    );
+          hot.setDataAtCell(2, 2, (cells[2][2]+data["GÜNLÜK"]["KULLANILAN"])    );
+          first_touch=1;
+          state =1
+
+        }
+        
+
+        calculateFlag = false; // Prevent further calculations until the next edit
+      }
+    }
+  });
+
+  // Reset the flag when the table is edited
+  hot.addHook('beforeChange', function(changes, source) {
+    if (source === 'edit') {
+      calculateFlag = true;
+    }
+  });
+  return hot
+}
+
+
+
+
+function sendMessage(){
+
+  const apiEndpoint = 'https://lbykiyv1n8.execute-api.us-east-1.amazonaws.com/update/update_fuels';
+  const datasetParam = encodeURIComponent(JSON.stringify(message));
+  const url = `${apiEndpoint}?ts=${timestamp}&company=${company}&site=${site}&state=${state}`;
+
+  
+
+ 
+  var xhttp = new XMLHttpRequest();
+  
+  const confirmed = confirm(`Emin misiniz?`);
+      if (confirmed) { // only proceed if user confirmed
+
+              document.getElementById('loading-spinner').style.display = 'block';
+
+              xhttp.open("POST",url, true);
+
+              xhttp.setRequestHeader('Content-Type','X-Amz-Date','Authorization','X-Api-Key','X-Amz-Security-Token'); // Set the content type to JSON
+              
+              const requestBody = JSON.stringify(message);
+              
+              xhttp.onreadystatechange = function() {
+              if (this.readyState === 4) {
+                if (this.status === 200) {
+                  // Request completed successfully
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  alert("Veriler Gönderildi");
+                  location.reload();
+                  
+                } else {
+                  // An error occurred
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  alert("Hata Oluştu");
+                  location.reload();
+                }
+              }
+            };
+            xhttp.send(requestBody); // Send the request body
+              //document.body.innerHTML = '';
+              //window.location.href = "mainpage.html";
+          }
+                            
+
+          
+
+
+}
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
