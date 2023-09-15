@@ -2,6 +2,9 @@
 <html>
 <head>
   <title>Kapasite Verisi</title>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+
   <style>
     /* Add this style for the table header cells */
   table th {
@@ -90,10 +93,17 @@
     <input type="date" id="date" name="date" onchange="logTimestamp()">
   </div>
   
-  <table id="capacityForm"></table>
+  
+  <div class="table-container">
+    <div class="table" id="capacityForm">
+    </div>
+    <div class="table" id="calculation">
+    </div>
+  </div>
 
 
-  <button  id="submitButton" style="display: none;" class="submit-btn"  onclick="readSaveValues()">Kaydet</button>
+
+  
   <br>
   <br>
  
@@ -187,6 +197,7 @@ function getMetaData() {
         //createTable()
         document.getElementById('date-form').style.display = 'block';
 
+
       })
       .catch(error => console.error(error));
   }
@@ -248,6 +259,23 @@ function getMetaData() {
           //console.log(val);
           //createTableForm()
           createTable()
+          createCalculateTable("calculation")
+
+          var submitButton = document.createElement("button");
+          submitButton.textContent = "Kaydet";
+          submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+          submitButton.addEventListener("click", function() {
+
+
+            //readSaveValues() 
+
+
+            
+          })
+          const existingButton = document.querySelector('button');
+          if (!existingButton){
+            document.body.appendChild(submitButton);
+          }
           
 
         })
@@ -256,6 +284,112 @@ function getMetaData() {
 
         
     }
+
+
+
+
+
+function createCalculateTable(table_id) {
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = table_id;
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+  var rowheaders =["TOPLAM TON","KAMYON SEFER","TIR SEFER","TIR KATSAYISI","KAMYON KÖMÜR TON","TIR KÖM TON","M3 KATSAYISI","KAMYON KÖM M3","TIR KÖM M3"]
+  var cells =[[0],[0],[0],[2.2],[0],[0],[1.33],[0],[0]]
+  var columnheaders=["HESAPLAMA"]
+  // Data for the table (rows with counting numbers)
+  
+
+
+
+
+  const container = document.querySelector('#' + table_id);
+  let calculateFlag = true; // Flag to control calculation
+  
+  const hot = new Handsontable(container, {
+    data: cells,
+    rowHeaders: rowheaders,
+    colHeaders: columnheaders,
+    height: '250px',
+    rowHeaderWidth: 150,
+    colHeaderWidth: 75,
+    colWidths: 130,
+    type: 'numeric',
+    rowHeaderAlign: 'htLeft', // Align row headers to the left
+    licenseKey: 'non-commercial-and-evaluation', // for non-commercial use only
+    cells: function (row, col) {
+      const cellProperties = {};
+      if (row === 4 || row === 5 || row === 7 || row === 8) {
+        cellProperties.readOnly = true;
+      }
+      // Make the first cell (row 0) and last cell (last row) readonly
+      
+
+      return cellProperties;
+    },
+  });
+ 
+  // Calculate and update the last row based on your requirements
+  hot.addHook('afterChange', function(changes, source) {
+    if (source === 'edit') {
+      var row_id;
+      var col_id;
+      var old_Val;
+      var new_Val;
+      var selected_row; 
+
+      
+
+
+        if (calculateFlag) {
+              changes.forEach(([row, col, oldVal, newVal]) => {
+                    row_id   = row;
+                    col_id   = col;
+                    old_Val  = oldVal;
+                    new_Val  = newVal;
+                    selected_row = rowheaders[row_id]
+
+                    console.log("row:",row_id)
+                    console.log("col:",col_id)
+                    console.log("oldVal:",old_Val)
+                    console.log("newVal:",new_Val)
+                    console.log("selected_row:",selected_row)
+              })
+              const rowCount = hot.countRows();
+              const colCount = hot.countCols();
+              
+              let result1 = parseFloat(cells[0][0] / ( (cells[2][0]*cells[3][0]) +cells[1][0] ) ) ;
+              let result2 = result1* cells[3][0]
+              let result3 = result1/ cells[6][0]
+              let result4 = result2/ cells[6][0]
+              hot.setDataAtCell(4, 0, result1);
+              hot.setDataAtCell(5, 0, result2);
+              hot.setDataAtCell(7, 0, result3);
+              hot.setDataAtCell(8, 0, result4);
+ 
+
+
+
+              calculateFlag = false; // Prevent further calculations until the next edit
+        }
+    }
+  })
+
+  // Reset the flag when the table is edited
+  hot.addHook('beforeChange', function(changes, source) {
+    if (source === 'edit') {
+      calculateFlag = true;
+    }
+  });
+  return hot
+}
+
+
+
 
 
     function createTable() {
@@ -326,38 +460,10 @@ function getMetaData() {
         table.appendChild(tbody);
         document.body.appendChild(table);
         table.appendChild(document.createElement("br"));
-        document.getElementById('submitButton').style.display = 'block';
+        //document.getElementById('submitButton').style.display = 'block';
     }
 
-/*
-    function createTableForm(){
 
-        const form = document.getElementById("capacityForm");
-        form.innerHTML = ''; // Clear existing form content
-        for (let i = 0; i < titles.length; i++) {
-            const row = document.createElement("tr");
-
-            const header = document.createElement("th");
-            header.textContent = titles[i];
-            row.appendChild(header);
-
-            const valueInput = document.createElement("td");
-            const value = document.createElement("input");
-            value.type = "number";
-            value.name = "row" + (i + 1);
-            value.value = val[i] ; //|| "" Assign value from API response or empty string if no value available
-            valueInput.appendChild(value);
-            row.appendChild(valueInput);
-
-            form.appendChild(row);
-          }
-          form.appendChild(document.createElement("br"));
-          document.getElementById('submitButton').style.display = 'block';
-
-          //createTable()
-    }     
-
-*/
 
 
      function readSaveValues() {
