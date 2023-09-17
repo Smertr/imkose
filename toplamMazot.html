@@ -276,6 +276,7 @@ function getTimeTable(){
 
       console.log(message)
       if(Object.keys(message).length >0){
+        console.log("tamam")
         sendMessage()
       }else{
         alert("Verileri Değiştirmediniz!")
@@ -313,10 +314,20 @@ function getMazot() {
         console.log("mazotData:    ",mazotData)
         console.log("mazotAracData:    ",mazotAracData)
         
-
-        mazotTable = createTables("MAZOT",mazotData)
-        mazotAracTable =createTables("ARAC",mazotAracData)
+        if(state==0){
+          mazotTable = createTables("MAZOT",mazotData)
+          mazotAracTable =createTables("ARAC",mazotAracData)
         //createTable2("ARAC",mazotAracData)
+        }else{
+          const confirmed = confirm(`Seçtiğiniz tarihte kayıtlı veri var. Güncellemek istediğinizden emin misini?`);
+          if (confirmed) { 
+              mazotTable = createTables("MAZOT",mazotData)
+              mazotAracTable =createTables("ARAC",mazotAracData)
+              state=0;
+          }
+
+        }
+        
         
 
 
@@ -423,6 +434,7 @@ const container = document.querySelector('#' + table_id);
       var old_Val;
       var new_Val;
       var selected_row; 
+      
 
       
 
