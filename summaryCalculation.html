@@ -164,6 +164,8 @@
   let sub_headers =[];
   let row_headers =[];
   let raw_data ={};
+  let field_data ={};
+  let mazot_data ={};
   var selectedValue =""
 
   // Check the user info on AWS and get the details of user
@@ -212,7 +214,6 @@
 
                   // Hide the loading spinner
                   document.getElementById('loading-spinner').style.display = 'none';
-                  //document.getElementById('firstDropdown').style.display = 'block';
                   document.getElementById('date-form').style.display = 'block';
                   document.getElementById('confirm-button').style.display = 'block';
                  
@@ -244,56 +245,84 @@
 
 
  
-function dateToTimesamp(stringDate){
-    const [year, month, day] = stringDate.split('-').map(Number);
-    const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
-    timestamp = chosenUTC/1000
-    return timestamp
-  }
+    function dateToTimesamp(stringDate){
+      const [year, month, day] = stringDate.split('-').map(Number);
+      const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+      timestamp = chosenUTC/1000
+      return timestamp
+    }
 
-    let dateForm = document.getElementById('date-form');
-    let confirmButton = document.getElementById('confirm-button');
-    confirmButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
-    confirmButton.addEventListener("click", function(event) {
-      document.getElementById('loading-spinner').style.display = 'block';
-      
-
-
-      var startDate = document.getElementById('start-date').value;
-      var endDate   = document.getElementById('end-date').value;
-
-      startTimestamp = dateToTimesamp(startDate)
-      endTimestamp   = dateToTimesamp(endDate)
-      
-      
-
-
-      console.log("Start Timestamp:", startTimestamp);
-      console.log("End Timestamp:", endTimestamp);
-
-      if(endTimestamp-startTimestamp > 2678400){
-
-        alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
-         document.getElementById('loading-spinner').style.display = 'none';
-      }else{
+      let dateForm = document.getElementById('date-form');
+      let confirmButton = document.getElementById('confirm-button');
+      confirmButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+      confirmButton.addEventListener("click", function(event) {
+        document.getElementById('loading-spinner').style.display = 'block';
         
 
-        getSummary()
-        document.getElementById('loading-spinner').style.display = 'none';
-      }
-      
-      
 
-      
-      //startTimestamp = 1680296400
-      //endTimestamp   =1680296400+86400
+        var startDate = document.getElementById('start-date').value;
+        var endDate   = document.getElementById('end-date').value;
 
-      
-      
-    });
+        startTimestamp = dateToTimesamp(startDate)
+        endTimestamp   = dateToTimesamp(endDate)
+        
+        
 
 
+        console.log("Start Timestamp:", startTimestamp);
+        console.log("End Timestamp:", endTimestamp);
 
+        if(endTimestamp-startTimestamp > 2678400){
+
+          alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
+           document.getElementById('loading-spinner').style.display = 'none';
+        }else{
+          
+
+          getSummary()
+          getFieldNotesSummary();
+          getMazotSummary();
+          document.getElementById('loading-spinner').style.display = 'none';
+        }
+        
+        
+
+        
+        //startTimestamp = 1680296400
+        //endTimestamp   =1680296400+86400
+
+        
+        
+      });
+
+
+function getFieldNotesSummary(){
+    const apiEndpoint = 'https://lb7w67d0b9.execute-api.us-east-1.amazonaws.com/ozet_field/ozet_field';
+      const url = `${apiEndpoint}?site=${site}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          field_data    = data;
+          console.log(field_data)
+        })
+        .catch(error => console.error(error));
+}
+
+
+
+function getMazotSummary(){
+    const apiEndpoint = 'https://l993o6jore.execute-api.us-east-1.amazonaws.com/ozet_mazot/ozet_mazot';
+      const url = `${apiEndpoint}?site=${site}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          mazot_data    = data;
+          console.log(mazot_data)
+        })
+        .catch(error => console.error(error));
+}
 
 
 
