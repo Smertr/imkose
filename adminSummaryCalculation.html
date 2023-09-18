@@ -2,6 +2,8 @@
 <html>
 <head>
   <title>Özet Veri</title>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
   <style>
        .submit-btn {
           display: inline-block;
@@ -21,24 +23,37 @@
         .submit-btn:active {
           transform: translateY(1px);
         }
+        #loading-spinner {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999; /* Make sure it's above other content */
+        }
+
         .spinner {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            border-top: 5px solid #387ED8;
-            border-right: 5px solid transparent;
-            animation: spin 1s linear infinite;
+          position: fixed;
+          top: 45%;
+          left: 45%;
+          
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          border-top: 5px solid #387ed8;
+          border-right: 5px solid transparent;
+          animation: spin 1s linear infinite;
+        }
 
-         }
-
-         @keyframes spin {
-           to {
-             transform: rotate(360deg);
-           }
-         }
+           @keyframes spin {
+             to {
+               transform: rotate(360deg);
+             }
+           }     
 
          .dropdown-label {
             display: block;
@@ -107,6 +122,18 @@
           border: 1px solid #4A5669;
 
         }
+         .table-container {
+          display: flex; /* Use flexbox to display tables side by side */
+          width: 50%;
+          margin-right: 20px; /* Add space between tables (adjust as needed) */
+        }
+
+        /* CSS for each table */
+        .table {
+          flex: 1; /* Allow tables to grow equally within the container */
+          margin-right: 20px; /* Add space between tables (adjust as needed) */
+        }
+
 
   </style>
   
@@ -135,6 +162,22 @@
 
   <table id="dataTable"></table>
   <button style="display: none;" onclick="readSaveValues()">Kaydet</button>
+
+  <br>
+  <br>
+ <div class="table-container">
+    <div class="table" id="MAZOT">
+    </div>
+    <div class="table" id="SAHA">
+    </div>
+  </div>
+
+  <br>
+  <div class="controls">
+    <button id="export-file"; style="display: none;">Download CSV</button>
+  </div>
+  <br>
+  <br>
 
 
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
@@ -251,7 +294,7 @@
      }
 
 
-  function updateSecondDropdown() {
+function updateSecondDropdown() {
           var firstDropdown = document.getElementById("firstDropdown");
           selectedValue = firstDropdown.value;
           console.log(selectedValue)
@@ -287,9 +330,14 @@ function dateToTimesamp(stringDate){
       if(endTimestamp-startTimestamp > 2678400){
 
         alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
+        document.getElementById('loading-spinner').style.display = 'none';
       }else{
-        //document.getElementById('loading-spinner').style.display = 'block';
         getSummary()
+        getFieldNotesSummary();
+        getMazotSummary();
+        document.getElementById('export-file').style.display = 'block';
+        document.getElementById('loading-spinner').style.display = 'none';
+        
       }
       
       
@@ -302,6 +350,129 @@ function dateToTimesamp(stringDate){
       
     });
 
+
+function createTables(table_id,data) {
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = table_id;
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+
+  var rowheaders =[];
+
+  if(table_id == "MAZOT"){
+    var list_rowheader=Object.keys(data)
+
+    rowheaders=[]
+    rowheaders.push("DEVİR")
+
+    for(let i = 0; i < list_rowheader.length; i++){
+      if(list_rowheader[i] != "DEVİR" && list_rowheader[i] != "KALAN"){
+        rowheaders.push(list_rowheader[i])
+      }
+    }
+    rowheaders.push("KALAN")
+
+  }else{
+    rowheaders =Object.keys(data)
+  }
+
+
+
+  var cells =[]
+  var columnheaders=["TOPLAM " + table_id]
+  // Data for the table (rows with counting numbers)
+  
+  for(let i = 0; i < rowheaders.length; i++){
+    var temp=[];
+    temp.push(data[rowheaders[i]])
+    cells.push(temp)
+
+  }
+  
+
+  console.log("rowheaders:   ",rowheaders)
+  console.log("columnheaders:   ",columnheaders)
+  console.log("cells:   ",cells)
+  const container = document.querySelector('#' + table_id);
+  const button = document.querySelector('#export-file');
+  button.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+  
+  const hot = new Handsontable(container, {
+    data: cells,
+    rowHeaders: rowheaders,
+    colHeaders: columnheaders,
+    height: '250px',
+    rowHeaderWidth: 200,
+    colHeaderWidth: 75,
+    colWidths: 130,
+    type: 'numeric',
+    rowHeaderAlign: 'htLeft', // Align row headers to the left
+    licenseKey: 'non-commercial-and-evaluation',// for non-commercial use only
+    cells: function (row, col) {
+      const cellProperties = {};
+      if (col >= 0 ) {
+        cellProperties.readOnly = true;
+      }
+      return cellProperties;
+    },
+    
+  }); 
+  const exportPlugin = hot.getPlugin('exportFile');
+  button.addEventListener('click', () => {
+    exportPlugin.downloadFile('csv', {
+      bom: false,
+      columnDelimiter: ',',
+      columnHeaders: true,
+      exportHiddenColumns: true,
+      exportHiddenRows: true,
+      fileExtension: 'csv',
+      filename: 'Handsontable-CSV-file_[YYYY]-[MM]-[DD]',
+      mimeType: 'text/csv',
+      rowDelimiter: '\r\n',
+      rowHeaders: true
+    });
+  });
+
+}
+
+
+
+
+function getFieldNotesSummary(){
+    const apiEndpoint = 'https://lb7w67d0b9.execute-api.us-east-1.amazonaws.com/ozet_field/ozet_field';
+      const url = `${apiEndpoint}?site=${selectedValue}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          field_data    = data;
+          console.log(field_data)
+          createTables("SAHA",field_data)
+          
+        })
+        .catch(error => console.error(error));
+}
+
+
+
+function getMazotSummary(){
+    const apiEndpoint = 'https://l993o6jore.execute-api.us-east-1.amazonaws.com/ozet_mazot/ozet_mazot';
+      const url = `${apiEndpoint}?site=${selectedValue}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          mazot_data    = data;
+          console.log(mazot_data)
+          createTables("MAZOT",mazot_data)
+          
+        })
+        .catch(error => console.error(error));
+}
 
 
 
@@ -377,6 +548,11 @@ function formatNumberWithCommas(number) {
 
 function createDataTable(title, headers, subheaders, rows, initialValue, rowHeaders, details, numBlankRows) {
 
+  var existingTable = document.getElementById("dataTable");
+  if (existingTable) {
+    existingTable.parentNode.removeChild(existingTable); // Remove the existing table
+  }
+
   // Add download button
   var downloadButton = document.createElement("button");
   downloadButton.textContent = "Download Excel";
@@ -385,7 +561,8 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
     downloadExcel(title, headers, subheaders, rows, rowHeaders, details);
   });
 
-  var table = document.getElementById("dataTable");
+  var table = document.createElement("table");
+  table.id = "dataTable"; // Set the id of the new table
   var thead = document.createElement("thead");
   var tbody = document.createElement("tbody");
 
@@ -510,6 +687,7 @@ function createDataTable(title, headers, subheaders, rows, initialValue, rowHead
   for (var i = 0; i < numBlankRows; i++) {
     table.appendChild(document.createElement("br"));
   }
+  document.body.appendChild(table);
 }
 
 

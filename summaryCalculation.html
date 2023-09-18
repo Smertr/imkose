@@ -168,9 +168,14 @@
     <div class="table" id="SAHA">
     </div>
   </div>
+  <br>
+  <div class="controls">
+    <button id="export-file"; style="display: none;">Download CSV</button>
+  </div>
+  <br>
+  <br>
 
-  <br>
-  <br>
+  
 
 
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
@@ -318,6 +323,7 @@
           
           
           document.getElementById('loading-spinner').style.display = 'none';
+          document.getElementById('export-file').style.display = 'block';
         }
         
         
@@ -379,6 +385,8 @@ function createTables(table_id,data) {
   console.log("columnheaders:   ",columnheaders)
   console.log("cells:   ",cells)
   const container = document.querySelector('#' + table_id);
+  const button = document.querySelector('#export-file');
+  button.classList.add("submit-btn"); // Add the CSS class "submit-btn"
   
   const hot = new Handsontable(container, {
     data: cells,
@@ -400,10 +408,23 @@ function createTables(table_id,data) {
     },
     
   }); 
+  const exportPlugin = hot.getPlugin('exportFile');
+  button.addEventListener('click', () => {
+    exportPlugin.downloadFile('csv', {
+      bom: false,
+      columnDelimiter: ',',
+      columnHeaders: true,
+      exportHiddenColumns: true,
+      exportHiddenRows: true,
+      fileExtension: 'csv',
+      filename: 'Handsontable-CSV-file_[YYYY]-[MM]-[DD]',
+      mimeType: 'text/csv',
+      rowDelimiter: '\r\n',
+      rowHeaders: true
+    });
+  });
 
 }
-
-
 
 
 function getFieldNotesSummary(){
