@@ -2,6 +2,8 @@
 <html>
 <head>
   <title>Özet Veri</title>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
   <style>
        .submit-btn {
           display: inline-block;
@@ -120,6 +122,18 @@
           border: 1px solid #4A5669;
 
         }
+        
+        .table-container {
+          display: flex; /* Use flexbox to display tables side by side */
+          width: 50%;
+          margin-right: 20px; /* Add space between tables (adjust as needed) */
+        }
+
+        /* CSS for each table */
+        .table {
+          flex: 1; /* Allow tables to grow equally within the container */
+          margin-right: 20px; /* Add space between tables (adjust as needed) */
+        }
 
   </style>
   
@@ -146,6 +160,18 @@
   <table id="dataTable"></table>
   <button style="display: none;" onclick="readSaveValues()">Kaydet</button>
 
+   <br>
+  <br>
+ <div class="table-container">
+    <div class="table" id="MAZOT">
+    </div>
+    <div class="table" id="SAHA">
+    </div>
+  </div>
+
+  <br>
+  <br>
+
 
   <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
   <script src="path/to/xlsx.full.min.js"></script>
@@ -167,6 +193,13 @@
   let field_data ={};
   let mazot_data ={};
   var selectedValue =""
+
+
+/*
+
+*/
+
+
 
   // Check the user info on AWS and get the details of user
    // Check the user info on AWS and get the details of user
@@ -282,6 +315,8 @@
           getSummary()
           getFieldNotesSummary();
           getMazotSummary();
+          
+          
           document.getElementById('loading-spinner').style.display = 'none';
         }
         
@@ -296,6 +331,81 @@
       });
 
 
+
+function createTables(table_id,data) {
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = table_id;
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+
+  var rowheaders =[];
+
+  if(table_id == "MAZOT"){
+    var list_rowheader=Object.keys(data)
+
+    rowheaders=[]
+    rowheaders.push("DEVİR")
+
+    for(let i = 0; i < list_rowheader.length; i++){
+      if(list_rowheader[i] != "DEVİR" && list_rowheader[i] != "KALAN"){
+        rowheaders.push(list_rowheader[i])
+      }
+    }
+    rowheaders.push("KALAN")
+
+  }else{
+    rowheaders =Object.keys(data)
+  }
+
+
+
+  var cells =[]
+  var columnheaders=["TOPLAM " + table_id]
+  // Data for the table (rows with counting numbers)
+  
+  for(let i = 0; i < rowheaders.length; i++){
+    var temp=[];
+    temp.push(data[rowheaders[i]])
+    cells.push(temp)
+
+  }
+  
+
+  console.log("rowheaders:   ",rowheaders)
+  console.log("columnheaders:   ",columnheaders)
+  console.log("cells:   ",cells)
+  const container = document.querySelector('#' + table_id);
+  
+  const hot = new Handsontable(container, {
+    data: cells,
+    rowHeaders: rowheaders,
+    colHeaders: columnheaders,
+    height: '250px',
+    rowHeaderWidth: 200,
+    colHeaderWidth: 75,
+    colWidths: 130,
+    type: 'numeric',
+    rowHeaderAlign: 'htLeft', // Align row headers to the left
+    licenseKey: 'non-commercial-and-evaluation',// for non-commercial use only
+    cells: function (row, col) {
+      const cellProperties = {};
+      if (col >= 0 ) {
+        cellProperties.readOnly = true;
+      }
+      return cellProperties;
+    },
+    
+  }); 
+
+}
+
+
+
+
 function getFieldNotesSummary(){
     const apiEndpoint = 'https://lb7w67d0b9.execute-api.us-east-1.amazonaws.com/ozet_field/ozet_field';
       const url = `${apiEndpoint}?site=${site}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
@@ -305,6 +415,8 @@ function getFieldNotesSummary(){
         .then(data => {
           field_data    = data;
           console.log(field_data)
+          createTables("SAHA",field_data)
+          
         })
         .catch(error => console.error(error));
 }
@@ -320,6 +432,8 @@ function getMazotSummary(){
         .then(data => {
           mazot_data    = data;
           console.log(mazot_data)
+          createTables("MAZOT",mazot_data)
+          
         })
         .catch(error => console.error(error));
 }
