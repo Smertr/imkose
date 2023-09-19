@@ -32,6 +32,7 @@
     <button id="button3">Limit Ayarlama</button>
     <button id="button4">Özet Veri Sorgulama</button>
     <button id="button5">Güncel Şantiye Notları</button>
+    <button id="button6">Araç Analizi</button>
     
      <!--AWS Javascript SDKs-->
     <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
@@ -114,6 +115,12 @@
       button5.addEventListener('click', () => {
         window.location.href = "lastUpdatedNotes.html";
         console.log('Button 5 clicked!');
+      });
+
+      const button6 = document.getElementById('button6');
+      button6.addEventListener('click', () => {
+        window.location.href = "veriAnalizAdmin.html";
+        console.log('Button 6 clicked!');
       });
 
 

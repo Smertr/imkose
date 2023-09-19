@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Özet Veri</title>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+  <style>
+       .submit-btn {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #2c3e50;
+          color: white;
+          font-size: 16px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+          background-color: #34495e;
+        }
+        
+        .submit-btn:active {
+          transform: translateY(1px);
+        }
+        #loading-spinner {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black overlay */
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 9999; /* Make sure it's above other content */
+        }
+
+        .spinner {
+          position: fixed;
+          top: 45%;
+          left: 45%;
+          
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          border-top: 5px solid #387ed8;
+          border-right: 5px solid transparent;
+          animation: spin 1s linear infinite;
+        }
+
+           @keyframes spin {
+             to {
+               transform: rotate(360deg);
+             }
+           }     
+
+         .dropdown-label {
+            display: block;
+            margin-top: 10px;
+            font-size: 15px;
+          }
+
+          .dropdown-list {
+            font-size: 15ğx;
+            width: 200px;
+            padding: 5px;
+            margin-bottom: 10px;
+          }
+        #date-form {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 10px;
+          padding: 10px;
+          border: 1px solid gray;
+          border-radius: 5px;
+          max-width: 500px;
+          font-family: Arial, sans-serif;
+}
+        }
+        
+        #date-form label {
+          margin-right: 10px;
+        }
+        
+        #date-form input[type="date"] {
+          border: 1px solid gray;
+          border-radius: 5px;
+          padding: 5px;
+          font-size: 20px;
+          font-family: Arial, sans-serif;
+        }
+
+
+
+    .container {
+      margin: 20px;
+    }
+
+     table {
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 5px;
+        }
+
+
+
+    table {
+          
+          /*border: 1px solid #4A5669;*/
+          /*border-radius: 0px;*/
+          width: 100%;
+        }
+
+        th, td {
+          padding: 5px;
+          text-align: center;
+          border: 1px solid #4A5669;
+
+        }
+         .table-container {
+          display: flex; /* Use flexbox to display tables side by side */
+          width: 50%;
+          margin-right: 20px; /* Add space between tables (adjust as needed) */
+        }
+
+        /* CSS for each table */
+        .table {
+          flex: 1; /* Allow tables to grow equally within the container */
+          margin-right: 20px; /* Add space between tables (adjust as needed) */
+        }
+
+
+  </style>
+  
+</head>
+<body>
+  <!-- Add a loading spinner -->
+  <div id="loading-spinner" style="display: none;">
+    <div class="spinner"></div>
+  </div>
+  <h1>Lütfen Seçiniz</h1>
+
+ <label class="dropdown-label" for="firstDropdown">Şantiye Seçiniz:</label>
+ 
+  <select id="firstDropdown" style="display: none;"  class="dropdown-list">
+    <option value="">Şantiye</option>
+  </select>
+  <form id="date-form" style="display: none;">
+        <label for="date">Tarih Seçiniz:</label>
+
+        <input type="date" id="start-date">
+        <input type="date" id="end-date">
+        
+        
+  </form>
+  <button id="confirm-button"style="display: none; submit-btn">Sorgula</button>
+  <br>
+  <br>
+
+  <select id="thirdDropdown" style="display: none;"  class="dropdown-list">
+    <option value="">Araçlar</option>
+  </select>
+
+  <br>
+  <br>
+ 
+
+  <br>
+  <div class="controls">
+    <button id="export-file"; style="display: none;">Download CSV</button>
+  </div>
+  <br>
+  <br>
+
+
+
+
+<!-- AWS Javascript SDKs-->
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+<script>
+  let type="all";
+  let company ="imkose"
+  var site    = "";
+  var sites   = []
+  let startTimestamp=0;
+  let endTimestamp=0;
+  let raw_data ={};
+  let metaData;
+  let meta_types;
+  let selectedSite =""
+  let selectedVehice =""
+
+
+  // Check the user info on AWS and get the details of user
+   // Check the user info on AWS and get the details of user
+      var data = {
+        UserPoolId  : 'us-east-1_1uKtiajQH',
+        ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+      };
+
+      var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+      var cognitoUser = userPool.getCurrentUser();
+      // Show the loading spinner
+      document.getElementById('loading-spinner').style.display = 'block';
+      cognitoUser.getSession(function(err, session) {
+                 
+                if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              
+
+              cognitoUser.getUserAttributes(function(err, result) {
+
+                  if (err) {
+                    console.log(err);
+                    return;
+                  }
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  console.log(result);
+                  console.log(site);
+                  getHeaders()
+                  getMetaData()
+                  // Hide the loading spinner
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  document.getElementById('firstDropdown').style.display = 'block';
+                  document.getElementById('date-form').style.display = 'block';
+                  document.getElementById('confirm-button').style.display = 'block';
+                  // Display the date-form
+                 
+                  //updateSecondDropdown()
+
+                 
+              });
+    
+      });
+
+
+
+
+function getHeaders() {
+      const apiEndpoint2 = 'https://lyfs15c2xb.execute-api.us-east-1.amazonaws.com/getheaders/headers';
+      const url2 = `${apiEndpoint2}?site=${site}&type=${type}&company=${company}`;
+
+      fetch(url2)
+        .then(response => response.json())
+        .then(data => {
+          
+          
+          Object.keys(data).forEach(location => {
+            const locationData = data[location];
+            
+            sites.push(location)   // şantiye isimleri
+
+          });
+          console.log(sites)
+          dropdownlists()
+          
+        })
+        .catch(error => console.error(error));
+    }
+
+function getMetaData() {
+    const apiEndpoint = 'https://sxl4s33mtd.execute-api.us-east-1.amazonaws.com/get_meta/get_metadata';
+    const url = `${apiEndpoint}?site=${site}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        metaData = data[0];
+        meta_types = Object.values(metaData["types"])
+        meta_types = meta_types.filter(function(item) {
+            return item !== 'EK YAKIT';
+          });
+        console.log("metaData:    ",meta_types)
+      })
+
+      .catch(error => console.error(error));
+  }
+
+
+function dropdownlists2(){  
+
+
+          // Populate the first dropdown list with values from the array
+          var thirdDropdown = document.getElementById("thirdDropdown");
+          // Clear the existing options in the dropdown
+           while (thirdDropdown.firstChild) {
+            thirdDropdown.removeChild(thirdDropdown.firstChild);
+          }
+          var option = document.createElement("option");
+          option.value = "ARAÇLAR";
+          option.text = "ARAÇLAR";  
+          thirdDropdown.appendChild(option);
+          for (var i = 0; i < meta_types.length; i++) {
+            var option = document.createElement("option");
+            option.value = meta_types[i];
+            option.text = meta_types[i];
+            thirdDropdown.appendChild(option);
+          }          
+
+          if(selectedVehice != ""){
+            createTables(raw_data,selectedVehice)
+          }
+
+           thirdDropdown.addEventListener("change", function() {
+              selectedVehice = thirdDropdown.value;
+              console.log("Selected Value: " + selectedVehice);
+              createTables(raw_data,selectedVehice)
+              document.getElementById('export-file').style.display = 'block';
+            });
+     }
+
+
+function dropdownlists(){  
+        var firstDropdown = document.getElementById("firstDropdown");
+          // Clear the existing options in the dropdown
+        while (firstDropdown.firstChild) {
+            firstDropdown.removeChild(firstDropdown.firstChild);
+        }
+        var option = document.createElement("option");
+        option.value = "ŞANTİYE";
+        option.text = "ŞANTİYE";  
+        firstDropdown.appendChild(option);
+        // Populate the first dropdown list with values from the array
+        var firstDropdown = document.getElementById("firstDropdown");
+        for (var i = 0; i < sites.length; i++) {
+          var option = document.createElement("option");
+          option.value = sites[i];
+          option.text = sites[i];
+          firstDropdown.appendChild(option);
+        }
+
+        firstDropdown.addEventListener("change", function() {
+          selectedSite = firstDropdown.value;
+          console.log("selectedSite : " + selectedSite);
+        });
+  
+   }
+
+
+
+function dateToTimesamp(stringDate){
+    const [year, month, day] = stringDate.split('-').map(Number);
+    const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+    timestamp = chosenUTC/1000
+    return timestamp
+  }
+
+let dateForm = document.getElementById('date-form');
+let confirmButton = document.getElementById('confirm-button');
+confirmButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+confirmButton.addEventListener("click", function(event) {
+      document.getElementById('loading-spinner').style.display = 'block';
+      
+
+      var startDate = document.getElementById('start-date').value;
+      var endDate   = document.getElementById('end-date').value;
+
+      startTimestamp = dateToTimesamp(startDate)
+      endTimestamp   = dateToTimesamp(endDate)
+      
+      
+
+
+      console.log("Start Timestamp:", startTimestamp);
+      console.log("End Timestamp:", endTimestamp);
+
+      if(endTimestamp-startTimestamp > 2678400){
+
+        alert('Lütfen arama kriteleriniz 30 günü geçmesin!')
+        document.getElementById('loading-spinner').style.display = 'none';
+      }else{
+        
+        getVehicleSummary()
+
+        
+        
+      }
+      
+      
+      
+      
+    });
+
+function createTables(data,selectedValue) {
+  var existingTable = document.getElementById('example1');
+  if (existingTable) {
+    existingTable.parentNode.removeChild(existingTable);
+  }
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = "example1";
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+
+  var rowheaders =[];
+  var cells =[]
+  var columnheaders= table_columns
+  // Data for the table (rows with counting numbers)
+  
+  var plakalar = Object.keys(data)
+
+  for (let i = 0; i < data.length; i++){
+      var temp = data[i];
+      if(temp["TİP"] == selectedValue){
+        var temp_cells=[]
+        rowheaders.push(temp["PLAKA"])
+        for (let j = 0; j < table_columns.length; j++){
+          var colon= table_columns[j]
+          var val = temp[colon]
+          temp_cells.push(val)
+        }
+        cells.push(temp_cells)
+     }
+  }
+
+  console.log("rowheaders:   ",rowheaders)
+  console.log("columnheaders:   ",columnheaders)
+  console.log("cells:   ",cells)
+  const formatTR = {
+    pattern: '0,0.00 $',
+  };
+  const container = document.querySelector('#example1');
+  const button = document.querySelector('#export-file');
+  button.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+  
+  const hot = new Handsontable(container, {
+    data: cells,
+    colHeaders: columnheaders,
+    height: 'auto',
+    rowHeaderWidth: 200,
+    type: 'numeric',
+    filters: true,
+    dropdownMenu: true,
+    columnSorting: true,
+    rowHeaderAlign: 'htLeft', // Align row headers to the left
+    licenseKey: 'non-commercial-and-evaluation',// for non-commercial use only
+    cells: function (row, col) {
+      const cellProperties = {};
+      if (col >= 0 ) {
+        cellProperties.readOnly = true;
+      }
+      return cellProperties;
+    },
+    
+  }); 
+  const exportPlugin = hot.getPlugin('exportFile');
+  button.addEventListener('click', () => {
+    exportPlugin.downloadFile('csv', {
+      bom: false,
+      columnDelimiter: ',',
+      columnHeaders: true,
+      exportHiddenColumns: true,
+      exportHiddenRows: true,
+      fileExtension: 'csv',
+      filename: 'Handsontable-CSV-file_[YYYY]-[MM]-[DD]',
+      mimeType: 'text/csv',
+      rowDelimiter: '\r\n',
+      rowHeaders: true
+    });
+  });
+
+}
+
+function getVehicleSummary(){
+    const apiEndpoint = 'https://xquflnfzl7.execute-api.us-east-1.amazonaws.com/details/arac_detay';
+      const url = `${apiEndpoint}?site=${selectedSite}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          raw_data    = Object.values(data);
+          //table_datas = data
+          //delete table_datas["SEFERLER"]; // Remove the row header if the row total is 0
+          table_columns = Object.keys(Object.values(data)[0])
+          table_columns = table_columns.filter(function(item) {
+            return item !== 'İŞLER' && item !== 'YAKITLAR' && item !== 'M3S' && item !== 'SEFERLER';
+          });
+          console.log("table_columns:  ",table_columns)
+
+          console.log(raw_data)
+          
+          document.getElementById('loading-spinner').style.display = 'none';
+          document.getElementById('thirdDropdown').style.display = 'block';
+          dropdownlists2()
+          
+        })
+        .catch(error => console.error(error));
+}
+
+
+
+
+
+
+  </script>  
+</body>
+</html>
