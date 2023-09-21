@@ -37,6 +37,7 @@
       <button id="button5">Binek Araçlar Veri Girişi</button>
       <button id="button6">Ek Yakıt Veri Girişi</button>
       <button id="button7">Delici Veri Girişi</button>
+      <button id="button18">Faaliyet Dışı İşler</button>
       <button id="button9">M3 - Ton Veri Girişi</button>
       <button id="button8">Günlük Notlar</button>
       <button id="button11">Saha Notları</button>
@@ -45,6 +46,7 @@
       <button id="button14">Sefer Detayları</button>
       <button id="button15">Araç Tanımlama</button>
       <button id="button17">Araç Analizleri</button>
+
       
     </div>
     
@@ -207,6 +209,12 @@
       button17.addEventListener('click', () => {
         window.location.href = "veriAnaliz.html";
         console.log('Button 17 clicked!');
+      });
+
+      const button18 = document.getElementById('button18');
+      button18.addEventListener('click', () => {
+        window.location.href = "faaliyetDisi.html";
+        console.log('button18  clicked!');
       });
     </script>
   </body>

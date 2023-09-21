@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Table with Add Button</title>
+    <style>
+
+        /* Submit button styles */
+        .submit-btn {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #2c3e50;
+          color: white;
+          font-size: 16px;
+          border-radius: 5px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+          background-color: #34495e;
+        }
+        
+        .submit-btn:active {
+          transform: translateY(1px);
+        }
+
+
+        .button-container {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+
+        .table{
+            margin-top: 50px;
+            font-size: 20px;
+
+        }
+
+
+
+        .input-cell {
+            box-sizing: border-box;
+            font-size: 20px;
+        }
+        .select-option {
+            box-sizing: border-box;
+            font-size: 20px;
+        }
+        
+
+
+        #date-form {
+          display: flex;
+          flex-direction: row;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 10px;
+          padding: 10px;
+          border: 1px solid gray;
+          border-radius: 5px;
+          max-width: 300px;
+          font-family: Arial, sans-serif;
+}
+        }
+        
+        #date-form label {
+          margin-right: 10px;
+        }
+        
+        #date-form input[type="date"] {
+          border: 1px solid gray;
+          border-radius: 5px;
+          padding: 5px;
+          font-size: 20px;
+          font-family: Arial, sans-serif;
+        }
+
+        .spinner {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          width: 150px;
+          height: 150px;
+          border-radius: 50%;
+          border-top: 5px solid #387ED8;
+          border-right: 5px solid transparent;
+          animation: spin 1s linear infinite;
+
+       }
+
+       @keyframes spin {
+         to {
+           transform: rotate(360deg);
+         }
+       }
+    </style>
+</head>
+<body>
+    <!-- AWS Javascript SDKs-->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+
+    <!-- Add a loading spinner -->
+      <div id="loading-spinner" style="display: none;">
+        <div class="spinner"></div>
+      </div>
+
+
+
+    <div class="container" id="date-form" >
+        <label for="date">Tarih Seçin:</label>
+        <input type="date" id="date" name="date" onchange="logTimestamp()">
+    </div>
+
+    <button id = "getButton" style="display: none;" onclick="createTable(oldData)">GETİR</button>
+
+    <br>
+    <br>
+    <div class="container" id="tonaj" style="display: none;">
+        <label>Toplam Tonaj:</label>
+        <input type="number" id="ton" name="ton">
+    </div>
+
+    <div id="tableContainer"  class="table"></div>
+
+    <div class="button-container">
+        <button id="addButton" style="display: none;" onclick="addRow()">Ekle</button>
+        <button id="submitButton" style="display: none;" onclick="submitForm()">Kaydet</button>
+    </div>
+
+    <script>
+        var company     = "";
+        var site        = "";
+            let timestamp   = 0;
+        let tonaj       = 0;
+        let trucks      = [];
+        let hdms        = [];
+        let shifts      = [];
+        let oldData     = [];
+        let oldTonaj;
+        let message     = {}
+        var tableData   = ['NAKLİYE','MAKİNA','SEFER', 'VARDİYA','NAKLİYE MAZOT', 'KM','MAKİNA MAZOT','SAAT'];
+        var cellWidths = ['100px', '100px', '100px', '100px', '200px', '100px','200px', '100px']; // Customize the widths here
+
+
+
+
+        // Check the user info on AWS and get the details of user
+        var data = {
+            UserPoolId  : 'us-east-1_1uKtiajQH',
+            ClientId    : '4rigc1mv6tt9h9kn5dvf8p859f'
+        };
+
+        var userPool    = new AmazonCognitoIdentity.CognitoUserPool(data);
+        var cognitoUser = userPool.getCurrentUser();
+        document.getElementById('loading-spinner').style.display = 'block';
+
+        cognitoUser.getSession(function(err, session) {
+                 
+                if (err) {
+                alert(err);
+                return;
+              }
+
+
+              // Add the User's Id Token to the Cognito credentials login map.
+              AWS.config.region   = 'us-east-1';
+              AWS.config.credentials  = new AWS.CognitoIdentityCredentials({
+                  IdentityPoolId: 'us-east-1:66ff584c-19c8-4e26-bd4a-ddb513efa027',   
+                  Logins: {
+                    'cognito-idp:us-east-1:793924894519:userpool/us-east-1_1uKtiajQH': session.getIdToken().getJwtToken()    
+                  }
+              });
+
+              
+
+              cognitoUser.getUserAttributes(function(err, result) {
+
+                  if (err) {
+                    console.log(err);
+                    return;
+                  }
+                  company = result[3].getValue();
+                  site    = result[2].getValue();
+                  getMetaData()
+                  getTrucks();
+                  getHdms();
+                  console.log(result);
+                  console.log(site);
+
+                  // Hide the loading spinner
+                  document.getElementById('loading-spinner').style.display = 'none';
+                  // Display the date-form
+                  document.getElementById('date-form').style.display = 'block';
+                 
+              });
+    
+      });
+
+
+
+function getMetaData() {
+    const apiEndpoint = 'https://sxl4s33mtd.execute-api.us-east-1.amazonaws.com/get_meta/get_metadata';
+    const url = `${apiEndpoint}?site=${site}`;
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        shifts = Object.values(data[0]["shifts"]);
+        console.log("shifts:   ",shifts)
+        
+      })
+
+      .catch(error => console.error(error));
+      }
+
+
+    function getOldData() {
+        const apiEndpoint = 'https://pk1v2fmm75.execute-api.us-east-1.amazonaws.com/get_datas/get_datas';
+        const url = `${apiEndpoint}?company=${company}&site=${site}&startdate=${timestamp}&enddate=${timestamp}`;
+        fetch(url)
+          .then(response => response.json())
+          .then(data => {
+           
+
+            Object.values(data[0]).forEach(temp_dict => {
+                Object.values(temp_dict).forEach(dict => {
+                    oldData.push(dict)
+                })
+                
+
+            })
+            oldTonaj = Object.values(Object.values(data[1]));
+            console.log("oldData:   ",oldData)
+            console.log("oldTonaj:   ",oldTonaj)
+            document.getElementById('getButton').style.display = 'block';
+            
+          })
+
+          .catch(error => console.error(error));
+          }
+
+
+
+
+    function getTrucks(){
+        const apiEndpoint1 = 'https://3oddda3bhd.execute-api.us-east-1.amazonaws.com/gethdms/hdms';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${"NAKLİYE"}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                trucks = Object.keys(data);
+              })
+              .catch(error => console.error(error));
+      }
+
+      function getHdms(){
+        const apiEndpoint1 = 'https://3oddda3bhd.execute-api.us-east-1.amazonaws.com/gethdms/hdms';    
+        const url1 = `${apiEndpoint1}?company=${company}&site=${site}&type=${"MAKİNA"}`;
+        console.log(url1)
+          // araç bilgilerini getirir
+          fetch(url1)
+              .then(response => response.json())
+              .then(data => {
+                hdms = Object.keys(data);
+              })
+              .catch(error => console.error(error));
+      }
+
+
+
+
+
+
+        function logTimestamp() {
+          var dateInput = document.getElementById('date');
+
+
+            let dateString = dateInput.value;
+            const [year, month, day] = dateString.split('-').map(Number);
+            const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
+            timestamp = chosenUTC/1000
+          
+            getOldData()
+          
+            //timestamp = 1682802000
+            console.log(timestamp);
+            
+            getButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+              
+        }
+
+
+
+
+
+        function createTable(oldData) {
+            document.getElementById('getButton').style.display = 'none';
+            document.getElementById('tonaj').style.display = 'block';
+            document.getElementById('addButton').style.display = 'block';
+            document.getElementById('submitButton').style.display = 'block';
+            addButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+            submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+            var tonajtable = document.getElementById('ton');
+            tonajtable.value = oldTonaj;
+
+
+           
+
+
+            var tableContainer = document.getElementById('tableContainer');
+            var table = document.createElement('table');
+            var thead = document.createElement('thead');
+            var tbody = document.createElement('tbody');
+            var headerRow = document.createElement('tr');
+
+            // Create table headers
+            for (var key in tableData) {
+                var th = document.createElement('th');
+                th.textContent = tableData[key];
+                th.style.width = cellWidths[i]; // Apply the cell width
+                headerRow.appendChild(th);
+            }
+
+            // Append header row to the table
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+            console.log("len:   ",oldData.length)
+            // 'NAKLİYE': '','MAKİNA': '','SEFER': '', 'VARDİYA': '','MAZOT': '', 'KM': '','SAAT': '' 
+            if(oldData.length>0){           
+                for (var i = 0; i < oldData.length; i++) {
+                // Append table rows to the table body
+                    var dataRow = document.createElement('tr');
+                    for (var j = 0; j < tableData.length; j++) {
+                        var td = document.createElement('td');
+                        if (j === 0) { // Convert second column to dropdown
+                            var select = document.createElement('select');
+                            select.classList.add('select-option');
+                            var firstoption = document.createElement('option');
+                            firstoption.value = oldData[i][tableData[j]]
+                            firstoption.text = oldData[i][tableData[j]]
+                            firstoption.classList.add('select-option');
+                            select.appendChild(firstoption);
+                            var options0 = trucks;
+                            for (var k = 0; k < options0.length; k++) {
+                              var option0 = document.createElement('option');
+                              option0.value = options0[k];
+                              option0.text = options0[k];
+                              option0.classList.add('select-option');
+                              select.appendChild(option0);
+                            }
+                            td.appendChild(select);
+                        }else if (j === 1) { // Convert second column to dropdown
+                            var select = document.createElement('select');
+                            select.classList.add('select-option');
+                            var firstoption = document.createElement('option');
+                            firstoption.value = oldData[i][tableData[j]]
+                            firstoption.text = oldData[i][tableData[j]]
+                            firstoption.classList.add('select-option');
+                            select.appendChild(firstoption);
+                            var options1 = hdms;
+                            for (var k = 0; k < options1.length; k++) {
+                              var option1 = document.createElement('option');
+                              option1.value = options1[k];
+                              option1.text = options1[k];
+                              option1.classList.add('select-option');
+                              select.appendChild(option1);
+                            }
+                            td.appendChild(select);
+                        }else if (j === 2) { 
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.value = oldData[i][tableData[j]]
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+
+                        }else if (j === 3) { // Convert second column to dropdown
+                            var select = document.createElement('select');
+                            select.classList.add('select-option');
+                            var firstoption = document.createElement('option');
+                            firstoption.value = oldData[i][tableData[j]]
+                            firstoption.text = oldData[i][tableData[j]]
+                            firstoption.classList.add('select-option');
+                            select.appendChild(firstoption);
+                            var options3 = shifts;
+                            for (var k = 0; k < options3.length; k++) {
+                              var option3 = document.createElement('option');
+                              option3.value = options3[k];
+                              option3.text = options3[k];
+                              option3.classList.add('select-option');
+                              select.appendChild(option3);
+                            }
+                            td.appendChild(select);
+                            
+                        }else if (j === 4) { // Convert second column to dropdown
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.value = oldData[i][tableData[j]]
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }else if (j === 5) { // Convert second column to dropdown
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.value = oldData[i][tableData[j]]
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }else if (j === 6) { // Convert second column to dropdown
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.value = oldData[i][tableData[j]]
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }else {
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.value = oldData[i][tableData[j]]
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }
+
+                    dataRow.appendChild(td);
+                    
+                    }
+                    // Create a delete button cell and add it to the row
+                    var deleteButtonCell = document.createElement('td');
+                    deleteButtonCell.appendChild(createDeleteButton());
+                    dataRow.appendChild(deleteButtonCell);
+                    tbody.appendChild(dataRow);
+                 }//for (var i = 0; i < oldData.length; i++)
+                // Append table body to the table
+                table.appendChild(tbody);
+
+                // Append the table to the table container
+                tableContainer.appendChild(table);
+            }else{
+                // Append table rows to the table body
+                    var dataRow = document.createElement('tr');
+                    for (var j = 0; j < tableData.length; j++) {
+                        var td = document.createElement('td');
+                        if (j === 0) { // Convert second column to dropdown
+                            var select = document.createElement('select');
+                            select.classList.add('select-option');
+                            var firstoption = document.createElement('option');
+                            firstoption.value = ""
+                            firstoption.text = "-"
+                            firstoption.classList.add('select-option');
+                            select.appendChild(firstoption);
+                            var options0 = trucks;
+                            for (var k = 0; k < options0.length; k++) {
+                              var option0 = document.createElement('option');
+                              option0.value = options0[k];
+                              option0.text = options0[k];
+                              option0.classList.add('select-option');
+                              select.appendChild(option0);
+                            }
+                            td.appendChild(select);
+                        }else if (j === 1) { // Convert second column to dropdown
+                            var select = document.createElement('select');
+                            select.classList.add('select-option');
+                            var firstoption = document.createElement('option');
+                            firstoption.value = ""
+                            firstoption.text = "-"
+                            firstoption.classList.add('select-option');
+                            select.appendChild(firstoption);
+                            var options1 = hdms;
+                            for (var k = 0; k < options1.length; k++) {
+                              var option1 = document.createElement('option');
+                              option1.value = options1[k];
+                              option1.text = options1[k];
+                              option1.classList.add('select-option');
+                              select.appendChild(option1);
+                            }
+                            td.appendChild(select);
+                        }else if (j === 2) { 
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+
+                        }else if (j === 3) { // Convert second column to dropdown
+                            var select = document.createElement('select');
+                            select.classList.add('select-option');
+                            var firstoption = document.createElement('option');
+                            firstoption.value = ""
+                            firstoption.text = "-"
+                            firstoption.classList.add('select-option');
+                            select.appendChild(firstoption);
+                            var options3 = shifts;
+                            for (var k = 0; k < options3.length; k++) {
+                              var option3 = document.createElement('option');
+                              option3.value = options3[k];
+                              option3.text = options3[k];
+                              option3.classList.add('select-option');
+                              select.appendChild(option3);
+                            }
+                            td.appendChild(select);
+                            
+                        }else if (j === 4) { // Convert second column to dropdown
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }else if (j === 5) { // Convert second column to dropdown
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }else if (j === 6) { // Convert second column to dropdown
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }else {
+                            var input = document.createElement('input');
+                            input.type = 'number';
+                            input.classList.add('input-cell');
+                            input.style.width = cellWidths[j];
+                            td.appendChild(input);
+                        }
+
+                    dataRow.appendChild(td);
+                    tbody.appendChild(dataRow);
+                    }
+                
+                // Append table body to the table
+                table.appendChild(tbody);
+
+                // Append the table to the table container
+                tableContainer.appendChild(table);
+
+            }
+
+
+
+        
+    }
+
+
+
+            // Create a delete button for each row
+            function createDeleteButton() {
+                var button = document.createElement('button');
+                button.textContent = 'Delete';
+                button.classList.add('delete-button');
+                button.addEventListener('click', function () {
+                    // Get the parent row and remove it from the table
+                    var row = this.closest('tr');
+                    if (row) {
+                        row.remove();
+                    }
+                });
+                return button;
+            }
+
+
+
+        
+
+        function addRow() {
+            var tableBody = document.querySelector('#tableContainer table tbody');
+            var newRow = document.createElement('tr');
+            var headers = document.querySelectorAll('#tableContainer table thead th');
+
+            for (var i = 0; i < headers.length; i++) {
+                var td = document.createElement('td');
+
+                if (i === 0) { // Convert second column to dropdown
+                        var select = document.createElement('select');
+                        select.classList.add('select-option');
+                        var firstoption = document.createElement('option');
+                        firstoption.value = ""
+                        firstoption.text = "-"
+                        firstoption.classList.add('select-option');
+                        select.appendChild(firstoption);
+                        var options0 = trucks;
+                        for (var k = 0; k < options0.length; k++) {
+                          var option0 = document.createElement('option');
+                          option0.value = options0[k];
+                          option0.text = options0[k];
+                          option0.classList.add('select-option');
+                          select.appendChild(option0);
+                        }
+                        td.appendChild(select);
+                    }else if (i === 1) { // Convert second column to dropdown
+                        var select = document.createElement('select');
+                        var firstoption = document.createElement('option');
+                        firstoption.value = ""
+                        firstoption.text = "-"
+                        firstoption.classList.add('select-option');
+                        select.appendChild(firstoption);
+                        select.classList.add('select-option');
+                        var options1 = hdms;
+                        for (var k = 0; k < options1.length; k++) {
+                          var option1 = document.createElement('option');
+                          option1.value = options1[k];
+                          option1.text = options1[k];
+                          option1.classList.add('select-option');
+                          select.appendChild(option1);
+                        }
+                        td.appendChild(select);
+                    }else if (i === 2) { 
+                        var input = document.createElement('input');
+                        input.type = 'number';
+                        input.classList.add('input-cell');
+                        input.style.width = cellWidths[i];
+                        td.appendChild(input);
+
+                    }else if (i === 3) { // Convert second column to dropdown
+                        var select = document.createElement('select');
+                        select.classList.add('select-option');
+                        var firstoption = document.createElement('option');
+                        firstoption.value = ""
+                        firstoption.text = "-"
+                        firstoption.classList.add('select-option');
+                        select.appendChild(firstoption);
+                        var options3 = shifts;
+                        for (var k = 0; k < options3.length; k++) {
+                          var option3 = document.createElement('option');
+                          option3.value = options3[k];
+                          option3.text = options3[k];
+                          option3.classList.add('select-option');
+                          select.appendChild(option3);
+                        }
+                        td.appendChild(select);
+                        
+                    }else if (i === 4) { // Convert second column to dropdown
+                        var input = document.createElement('input');
+                        input.type = 'number';
+                        input.classList.add('input-cell');
+                        input.style.width = cellWidths[i];
+                        td.appendChild(input);
+                    }else if (i === 5) { // Convert second column to dropdown
+                        var input = document.createElement('input');
+                        input.type = 'number';
+                        input.classList.add('input-cell');
+                        input.style.width = cellWidths[i];
+                        td.appendChild(input);
+                    }else if (i === 6) { // Convert second column to dropdown
+                        var input = document.createElement('input');
+                        input.type = 'number';
+                        input.classList.add('input-cell');
+                        input.style.width = cellWidths[i];
+                        td.appendChild(input);
+                    }else {
+                        var input = document.createElement('input');
+                        input.type = 'number';
+                        input.classList.add('input-cell');
+                        input.style.width = cellWidths[i];
+                        td.appendChild(input);
+                    }
+                newRow.appendChild(td);
+            }
+            // Create a delete button cell and add it to the row
+            var deleteButtonCell = document.createElement('td');
+            deleteButtonCell.appendChild(createDeleteButton());
+            newRow.appendChild(deleteButtonCell);
+            tableBody.appendChild(newRow);
+            
+
+            
+        }
+
+
+
+
+        function submitForm() {
+          var tonajtable = document.getElementById('ton');
+          tonaj = tonajtable.value
+
+          var blankFlag=0;
+          var tableRows = document.querySelectorAll('#tableContainer table tbody tr');
+          var headers = tableData
+          var message={}
+          
+          var values = [];
+
+          for (var i = 0; i < tableRows.length; i++) {
+            var rowValues = [];
+            var rowInputs = tableRows[i].querySelectorAll('input, select'); // Include select elements in the query
+
+            for (var j = 0; j < rowInputs.length; j++) {
+              if (rowInputs[j].tagName === 'INPUT') {
+                rowValues.push(rowInputs[j].value);
+              } else if (rowInputs[j].tagName === 'SELECT') {
+                rowValues.push(rowInputs[j].options[rowInputs[j].selectedIndex].value); // Get the selected option value
+              }
+            }
+
+            values.push(rowValues);
+          }
+
+          // Log the values row by row and column by column
+          for (var i = 0; i < values.length; i++) {
+            var tempMessage ={}
+            tempMessage["ts"] = timestamp
+            for (var j = 0; j < values[i].length; j++) {
+                if(values[i][j] != ""){
+                    tempMessage[headers[j]] = values[i][j]
+                }else{
+                    blankFlag=1;
+                    
+                }
+                
+            }
+            message[i] = tempMessage
+          }
+          if(blankFlag===1){
+            alert("Boş Bırakılmış Sekme Var. Lütfen Verileri Tamamlayn!")
+        }else{
+             if(tonaj ===""){
+                alert("Lütfen Toplam Tonaj Değeri Giriniz!")
+              }else{
+                sendForm()
+              }
+        }
+          
+
+          console.log("message:  ",message)
+          console.log("tonaj:  ",tonaj)
+         
+          
+        }
+
+
+        function sendForm(){
+              const apiEndpoint = 'https://ghztr21i7i.execute-api.us-east-1.amazonaws.com/save/faaliyet_disi_save';
+              const url = `${apiEndpoint}?ts=${timestamp}&company=${company}&site=${site}&tonaj=${tonaj}`;
+             
+              var xhttp = new XMLHttpRequest();
+              
+              const confirmed = confirm(`Emin misiniz?`);
+                  if (confirmed) { // only proceed if user confirmed
+
+                          document.getElementById('loading-spinner').style.display = 'block';
+
+                          xhttp.open("POST",url, true);
+
+                          xhttp.setRequestHeader('Content-Type','X-Amz-Date','Authorization','X-Api-Key','X-Amz-Security-Token'); // Set the content type to JSON
+                          console.log("burası")
+                          const requestBody = JSON.stringify(message);
+                          
+                          xhttp.onreadystatechange = function() {
+                          if (this.readyState === 4) {
+                            if (this.status === 200) {
+                              // Request completed successfully
+                              document.getElementById('loading-spinner').style.display = 'none';
+                              alert("Veriler Gönderildi");
+                              
+                            } else {
+                              // An error occurred
+                              document.getElementById('loading-spinner').style.display = 'none';
+                              alert("Hata Oluştu");
+                            }
+                          }
+                        };
+                        xhttp.send(requestBody); // Send the request body
+                          //document.body.innerHTML = '';
+                          //window.location.href = "mainpage.html";
+                      }
+                                        
+
+        }
+
+
+
+        // Call the createTable function to generate the table
+        
+    </script>
+</body>
+</html>
