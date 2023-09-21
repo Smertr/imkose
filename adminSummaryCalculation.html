@@ -146,6 +146,7 @@
   <h1>Lütfen Seçiniz</h1>
 
  <label class="dropdown-label" for="firstDropdown">Şantiye Seçiniz:</label>
+ 
   <select id="firstDropdown" style="display: none;"  class="dropdown-list">
     <option value="">Şantiye</option>
   </select>
@@ -533,7 +534,7 @@ function getMazotSummary(){
         console.log("row_headers : ",row_headers) 
         headers=["DEKAPAJ","KÖMÜR","STOK","TOPLAM","VERİ"]
         sub_headers=[["SEFER","M3","TON"],["SEFER","M3","TON"],["SEFER","M3","TON"],["SEFER","M3","TON","KM_SAAT","YAKIT"],["YAKIT/M3","YAKIT/KM_SAAT","YAKIT/SEFER","KM_SAAT/SEFER","M3/SEFER"]]
-        row_headers =["KAMYON","TIR","MAKİNA","ELEKTRİKLİ MAKİNA","YARDIMCI MAKİNA","DİĞER SAHA ARAÇLARI","BİNEK ARAÇ","DELİCİ","EK YAKIT","TOPLAM NAKLİYE","TOPLAM MAKİNA","TOPLAM"]
+        row_headers =["KAMYON","TIR","MAKİNA","ELEKTRİKLİ MAKİNA","YARDIMCI MAKİNA","DİĞER SAHA ARAÇLARI","BİNEK ARAÇ","DELİCİ","EK YAKIT","DRAGLINE","TOPLAM NAKLİYE","TOPLAM MAKİNA","TOPLAM"]
         //createDataTable(headers, subheaders, rows, initialValue, rowHeaders)  
         createDataTable(periods[0],headers,sub_headers,row_headers.length,0,row_headers,details[0],5)
         })
