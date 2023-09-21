@@ -531,9 +531,13 @@ function getMetaData() {
                         }
 
                     dataRow.appendChild(td);
-                    tbody.appendChild(dataRow);
+
+
                     }
-                
+                var deleteButtonCell = document.createElement('td');
+                    deleteButtonCell.appendChild(createDeleteButton());
+                    dataRow.appendChild(deleteButtonCell);
+                    tbody.appendChild(dataRow);
                 // Append table body to the table
                 table.appendChild(tbody);
 
@@ -682,7 +686,7 @@ function getMetaData() {
           var blankFlag=0;
           var tableRows = document.querySelectorAll('#tableContainer table tbody tr');
           var headers = tableData
-          var message={}
+
           
           var values = [];
 
@@ -757,6 +761,7 @@ function getMetaData() {
                               // Request completed successfully
                               document.getElementById('loading-spinner').style.display = 'none';
                               alert("Veriler Gönderildi");
+                               location.reload();
                               
                             } else {
                               // An error occurred
