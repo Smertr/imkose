@@ -2,7 +2,8 @@
 <html>
   <head>
     <title>Kamyon Verileri</title>
-
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
 
     <style>
 
@@ -167,6 +168,11 @@
         <label for="date">Tarih Seçiniz:</label>
         <input type="date" id="date-input" value="<%= today %>">
       </form>
+
+      <br>
+      <br>
+      <div id="example1" class="hot "></div>
+
       <script>
       var type = "NAKLİYE"
       var company = "";
@@ -323,7 +329,8 @@ function getKmHour(){
               .then(data => {
                 todaysData = data
                 console.log(todaysData)
-                table(row)
+                //table(row)
+                createTables(row)
 
               })
               .catch(error => console.error(error));
@@ -340,21 +347,9 @@ function getTable(){
             const [year, month, day] = dateString.split('-').map(Number);
             const chosenUTC = Date.UTC(year, month - 1, day, 0, 0, 0);
             timestamp = chosenUTC/1000
-            /*
-            console.log("dateString:    ",dateString)
-            let year = dateString.substring(0, 4);
-            let month = dateString.substring(5, 7) - 1;
-            let day = dateString.substring(8, 10);
-            let selectedDate = new Date(year, month, day);
-            timestamp = selectedDate.getTime()/1000;
-            */
             console.log("Timestamp:", timestamp);
             date = timestamp;
             row = rows
-            const currentDate = new Date(); // Get the current date and time
-            currentDate.setUTCHours(0, 0, 0, 0); // Set the time to 12:00 am
-            todays_timestamp = currentDate.getTime()/1000;
-            console.log("todays_timestamp:    ",todays_timestamp);
 
 
             var button1 = document.createElement("button");
@@ -363,18 +358,9 @@ function getTable(){
             document.body.appendChild(button1);
 
 
-            if (timestamp !=todays_timestamp){
-              const confirmed = confirm(`Bugünün tarihini seçmediniz. Devam Etmek istiyor musunuz?`);
-                                            if (!confirmed) { // only proceed if user confirmed
-                                             location.reload();
-                                            }else{
-                                                button1.addEventListener("click", function() {
-                                                  getKmHour()
-                                                })
-                                            }
-            }else{
-              //table(row)
-            }        
+            button1.addEventListener("click", function() {
+                    getKmHour()
+            })
 
 
         
@@ -382,6 +368,83 @@ function getTable(){
 
 
 }; 
+
+function createTables(data) {
+  var existingTable = document.getElementById('example1');
+  if (existingTable) {
+    existingTable.parentNode.removeChild(existingTable);
+  }
+  // Create a new <div> element
+  var divElement = document.createElement('div');
+
+  // Set the id attribute to "example"
+  divElement.id = "example1";
+
+  // Append the <div> element to the body or any other parent element
+  document.body.appendChild(divElement);
+
+  var rowheaders =[];
+  var cells =[]
+  var columnheaders= headers
+  // Data for the table (rows with counting numbers)
+  for (let i = 0; i < data.length; i++){
+    rowheaders.push(i)
+  }
+
+  for (let i = 0; i < data.length; i++){
+        var temp_cells=[]
+        for (let j = 0; j < columnheaders.length; j++){
+            var colon   = columnheaders[j]
+
+            if(j===0){
+              temp_cells.push(models[i])
+            }else if(j===1){
+              temp_cells.push(data[i])
+            }else if(j===8){
+              temp_cells.push(kms[i])
+            }else{
+              try{
+                temp_cells.push(todaysData[data[i]][colon])
+              }
+              catch{
+                temp_cells.push("")
+              }
+              
+            }
+            
+        }
+        cells.push(temp_cells)
+     
+  }
+
+  console.log("rowheaders:   ",rowheaders)
+  console.log("columnheaders:   ",columnheaders)
+  console.log("cells:   ",cells)
+  const container = document.querySelector('#example1');
+  
+  const hot = new Handsontable(container, {
+    data: cells,
+    colHeaders: columnheaders,
+    rowHeaders: rowheaders,
+    height: 'auto',
+    rowHeaderWidth: 30,
+    type: 'numeric',
+    filters: true,
+    dropdownMenu: true,
+    columnSorting: true,
+    rowHeaderAlign: 'htLeft', // Align row headers to the left
+    licenseKey: 'non-commercial-and-evaluation',// for non-commercial use only
+    cells: function (row, col) {
+      const cellProperties = {};
+      if (col >= 0 ) {
+        cellProperties.readOnly = true;
+      }
+      return cellProperties;
+    },
+    
+  }); 
+  submitButton(row) 
+}
 
 
     
@@ -566,7 +629,7 @@ function getTable(){
                         }
                   
                 }
-               alert("Bu Alandan Veriler Kaydedilemez!")
+
                 
                 /*
                 const apiEndpoint = 'https://undpixtfr2.execute-api.us-east-1.amazonaws.com/update/hello';
@@ -594,10 +657,9 @@ function getTable(){
                             //document.body.innerHTML = '';
                             //window.location.href = "mainpage.html";
                         }
-                  */
                                           
 
-                
+                */
                 
              
                
