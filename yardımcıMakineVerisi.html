@@ -520,7 +520,7 @@ function submitButton(row,hot){
             temps["BAŞLANGIÇ"] = datas[i][2];
             for(let j = 3; j <headers.length; j++){
                 console.log("val:   ",datas[i][j])
-                if(datas[i][j] === "" || datas[i][j] === "null" || datas[i][j] === "undefined"){
+                if(datas[i][j] === '' || datas[i][j] === null || datas[i][j] === undefined){
                   console.log("nan değeri")
                 }else{
                   temps[headers[j]] = `${datas[i][j]}`
