@@ -517,7 +517,7 @@ function submitButton(row,hot){
           for(let i = 0; i <datas.length; i++){
             temps = {}
             var flag=0
-            temps["BAŞLANGIÇ"] = datas[i][2];
+            temps["BAŞLANGIÇ"] = `${datas[i][2]}`;
             for(let j = 3; j <headers.length; j++){
                 console.log("val:   ",datas[i][j])
                 if(datas[i][j] === '' || datas[i][j] === null || datas[i][j] === undefined){
