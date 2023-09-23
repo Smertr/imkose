@@ -364,7 +364,12 @@ function createTables(data) {
             }else if(j===1){
               temp_cells.push(data[i])
             }else if(j===2){
-              temp_cells.push(kms[i])
+              try{
+                temp_cells.push(todaysData[data[i]][colon])
+              }
+              catch{
+                temp_cells.push(kms[i])
+              }
             }else{
               try{
                 temp_cells.push(todaysData[data[i]][colon])

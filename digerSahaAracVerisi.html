@@ -94,22 +94,6 @@
            }
 
 
-       .red-button {
-          bdisplay: inline-block;
-          padding: 10px 20px;
-          background-color: #red;
-          color: white;
-          font-size: 16px;
-          border-radius: 5px;
-          cursor: pointer;
-          transition: all 0.3s ease;
-        }
-
-        .green-button {
-            background-color: green;
-            color: white;
-        }
-
       </style>
     </head>
     <body>
@@ -367,7 +351,13 @@ function createTables(data) {
             }else if(j===1){
               temp_cells.push(data[i])
             }else if(j===2){
-              temp_cells.push(kms[i])
+              try{
+                temp_cells.push(todaysData[data[i]][colon])
+              }
+              catch{
+                temp_cells.push(kms[i])
+              }
+              
             }else{
               try{
                 temp_cells.push(todaysData[data[i]][colon])
