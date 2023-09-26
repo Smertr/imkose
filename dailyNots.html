@@ -203,9 +203,17 @@
               .then(response => response.json())
               .then(data => {
                 console.log(company);
-                rows = Object.keys(data);
+                console.log(data);
+                Object.keys(data).forEach(item => {
+                    if(data[item]==="MAKİNA" || data[item]==="YARDIMCI MAKİNA"){
+                        rows.push(item)
+                    }
+
+                })
+                //rows = Object.keys(data);
                 console.log(rows);
-                console.log(Object.values(data));
+                //console.log(Object.values(data));
+                
                 /*
                 Object.values(data).forEach(value => {
                 const [model, km, marka ,tip, site] = value.split("-").map(value => value.trim()); // split value based on "-" and trim each value
