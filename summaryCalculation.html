@@ -125,7 +125,7 @@
         
         .table-container {
           display: flex; /* Use flexbox to display tables side by side */
-          width: 50%;
+          width: 100%;
           margin-right: 20px; /* Add space between tables (adjust as needed) */
         }
 
@@ -167,6 +167,8 @@
     </div>
     <div class="table" id="SAHA">
     </div>
+    <div class="table" id="FAALİYET-DIŞI">
+    </div>
   </div>
   <br>
   <div class="controls">
@@ -197,6 +199,7 @@
   let raw_data ={};
   let field_data ={};
   let mazot_data ={};
+  let faaliyet_data ={};
   var selectedValue =""
 
 
@@ -320,6 +323,7 @@
           getSummary()
           getFieldNotesSummary();
           getMazotSummary();
+          getFaaliyetDisi()
           
           
           document.getElementById('loading-spinner').style.display = 'none';
@@ -394,8 +398,8 @@ function createTables(table_id,data) {
     colHeaders: columnheaders,
     height: '250px',
     rowHeaderWidth: 200,
-    colHeaderWidth: 75,
-    colWidths: 130,
+    colHeaderWidth: 100,
+    colWidths: 150,
     type: 'numeric',
     rowHeaderAlign: 'htLeft', // Align row headers to the left
     licenseKey: 'non-commercial-and-evaluation',// for non-commercial use only
@@ -442,6 +446,20 @@ function getFieldNotesSummary(){
         .catch(error => console.error(error));
 }
 
+function getFaaliyetDisi(){
+    const apiEndpoint = 'https://gfdno8xby0.execute-api.us-east-1.amazonaws.com/summary/ozet_calc';
+      const url = `${apiEndpoint}?site=${site}&ts1=${startTimestamp}&ts2=${endTimestamp}&company=${company}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          faaliyet_data    = data;
+          console.log(faaliyet_data)
+          createTables("FAALİYET-DIŞI",faaliyet_data)
+          
+        })
+        .catch(error => console.error(error));
+}
 
 
 function getMazotSummary(){
