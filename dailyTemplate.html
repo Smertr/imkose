@@ -114,6 +114,9 @@
 <!-- AWS JavaScript SDKs -->
 <script src="https://sdk.amazonaws.com/js/aws-sdk-2.988.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js/dist/amazon-cognito-identity.min.js"></script>
+<br>
+    <div id="example" class="hot "></div>
+<br>
 <!-- Container for Handsontable -->
 
 
@@ -136,6 +139,7 @@
   var nakliyeLimits;
   var limits;
   var truck_types;
+  let hot;
 
   // Check the user info on AWS and get the details of the user
   var data = {
@@ -188,6 +192,10 @@
 
 function createTable2(){
   // Create a new <div> element
+  var existingTable = document.getElementById('example');
+  if (existingTable) {
+    existingTable.parentNode.removeChild(existingTable);
+  }
   var divElement = document.createElement('div');
 
   // Set the id attribute to "example"
@@ -215,7 +223,7 @@ function createTable2(){
 
 
     const container = document.querySelector('#example');
-    const hot = new Handsontable(container, {
+    hot = new Handsontable(container, {
       data : temp_data,
 
       rowHeaders: kamyon_id,
@@ -308,7 +316,7 @@ function getUniqueValues(arr) {
 
 
 
-function calculateColumnTotals2(hot){
+function calculateColumnTotals(hot){
       
       truck_types.push("TOPLAM")
       const numColumns = makinalar.length
@@ -337,7 +345,7 @@ function calculateColumnTotals2(hot){
             row.forEach((cellValue, colIndex) => {
               if (cellValue){
                   var mak = makinalar[colIndex]
-                  console.log("calculateColumnTotals2:    ",cellValue)
+                  console.log("calculateColumnTotals:    ",cellValue)
                   
                   columnTotalsObject[mak][tip] += parseFloat(cellValue) || 0;
                   columnTotalsObject[mak]["TOPLAM"] += parseFloat(cellValue) || 0;                    
@@ -361,79 +369,6 @@ function calculateColumnTotals2(hot){
     
 
   }
-
-
-
-
-
-
-
-function calculateColumnTotals(hot) {
-  const table = document.querySelector('table');
-  const rows = table.getElementsByTagName('tr');
-  const headerCells = rows[0].getElementsByTagName('th');
-  const numColumns = headerCells.length - 1; // Subtract 1 to exclude the first header cell
-
-  const columnTotals = Array(numColumns).fill(0);
-  const tırTotals = Array(numColumns).fill(0);
-  const kamyonTotals = Array(numColumns).fill(0);
-
-  for (let i = 1; i < rows.length; i++) { // Skip the first row since it's the header row
-    const cells = rows[i].getElementsByTagName('td');
-    var plaka = rows[i].textContent
-    var tip = kamyonlar[rows[i].textContent]
-    //console.log("celss: ",plaka, "  ", tip)
-
-    for (let j = 0; j < cells.length; j++) {
-      const cellValue = parseInt(cells[j].querySelector('input').value);
-      if (!isNaN(cellValue)) {
-
-            if (tip == "KAMYON"){
-              kamyonTotals[j] += cellValue;
-            }else{
-              tırTotals[j] += cellValue;
-
-        columnTotals[j] += cellValue;
-      }
-    }
-  }
-
-  const columnHeaderNames = [];
-  for (let j = 0; j < numColumns; j++) {
-    columnHeaderNames.push(headerCells[j + 1].textContent); // Start from index 1 to exclude the first header cell
-  }
-  var total_temp ={}
-  total_temp["toplam"]  = 0
-  total_temp["kamyon"]  = 0
-  total_temp["tır"]     = 0
-
-
-  columnHeaderNames.forEach((name, index) => {
-    var temp ={}
-    temp["toplam"]  = columnTotals[index]
-    temp["kamyon"]  = kamyonTotals[index]
-    temp["tır"]     = tırTotals[index]
-
-    total_temp["toplam"]  += columnTotals[index]
-    total_temp["kamyon"]  += kamyonTotals[index]
-    total_temp["tır"]     += tırTotals[index]
-
-    //columnTotalsObject[name] = columnTotals[index];
-    if (temp["toplam"] >0){
-      columnTotalsObject[name] = temp;
-
-    }else{
-      delete columnTotalsObject[name]; // Remove the row header if the row total is 0
-    }
-    
-  });
-
-  columnTotalsObject["TOPLAM"] = total_temp;
-  console.log("toplam: " , columnTotalsObject["TOPLAM"])
-  //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
-  
-}}
-
 
 
 
@@ -591,29 +526,123 @@ function getHeaders(type){
 
 
 
-  function handleShiftSelection(event) {
+function handleShiftSelection(event) {
   const selectedKey = event.target.value;
   const selectedValue = rawData.shifts[selectedKey];
   selectedShift = selectedValue;
+
+  // Remove all existing .table-container2 elements from the document.body
+  const existingTableContainers = document.querySelectorAll('.table-container2, .table-container3');
+  existingTableContainers.forEach((container) => {
+    const parentElement = container.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(container);
+    }
+  });
+
   console.log("Selected Shift: " + selectedShift);
   console.log("Selected Material: " + selectedMaterial);
+  console.log("veriler değiştiriliyor111111")
   //uploadJsonObject(); // Upload the JSON object if necessary
   //createTable(); // Always call createTable() when material is selected
-  checkSelected()
+  //checkSelected()
+  //if(selectedShift!="" && selectedMaterial!=""){
+    getLimits()
+    uploadJsonObject(); // Upload the JSON object if necessary
+    createTable2()
+    //createSummary(hot)
+    message ={};
+    console.log("veriler değiştiriliyor!!!")
+    const existingButton = document.querySelector('button');
+  if (existingButton){
+    document.body.removeChild(submitButton);
+
+  }
+    var submitButton = document.createElement("button");
+    submitButton.textContent = "Taslağı Kaydet";
+    submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+    document.body.appendChild(submitButton);
+
+ 
+  
+  submitButton.addEventListener("click", function() {
+    console.log("basıldı")
+    //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
+    //console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
+    message = getTableValues()
+    saveJsonObject(message)
+    
+
+  });
+  
+  //}
+
 }
 
 function handleMaterialSelection(event) {
   const selectedKey = event.target.value;
   const selectedValue = rawData.materials[selectedKey];
   selectedMaterial = selectedValue;
+
+  // Remove all existing .table-container2 elements from the document.body
+  const existingTableContainers = document.querySelectorAll('.table-container2, .table-container3');
+  existingTableContainers.forEach((container) => {
+    const parentElement = container.parentElement;
+    if (parentElement) {
+      parentElement.removeChild(container);
+    }
+  });
+
   console.log("Selected Shift: " + selectedShift);
   console.log("Selected Material: " + selectedMaterial);
+  console.log("veriler değiştiriliyor111111")
+  //if(selectedShift!="" && selectedMaterial!=""){
+    getLimits()
+    uploadJsonObject(); // Upload the JSON object if necessary
+    createTable2()
+    //createSummary(hot)
+    message ={};
+    console.log("veriler değiştiriliyor!!!")
+    const existingButton = document.querySelector('button');
+    if (existingButton){
+      document.body.removeChild(submitButton);
+    }
+
+    
+      var submitButton = document.createElement("button");
+      submitButton.textContent = "Taslağı Kaydet";
+      submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+      document.body.appendChild(submitButton);
+
+   
   
+  
+  
+  //}
   //uploadJsonObject(); // Upload the JSON object if necessary
   //createTable(); // Always call createTable() when material is selected
-  checkSelected()
+  //checkSelected()
   
 }
+
+
+function saveButton(){
+  submitButton.addEventListener("click", function() {
+    console.log("basıldı")
+    //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
+    //console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
+    message = getTableValues()
+    saveJsonObject(message)
+    
+
+  });
+}
+
+
+
+
+
+
 function checkSelected(){
   if (selectedMaterial != "" && selectedShift != ""){
       var lineBreak = document.createElement("br");
@@ -626,19 +655,19 @@ function checkSelected(){
 
 
 
-      savedJsonObject={};
-      message ={}
+      //savedJsonObject={};
+      //message ={}
       getLimits()
       uploadJsonObject(); // Upload the JSON object if necessary
       //createTable(); // Always call createTable() when material is selected
-      createTable2()
+      
       const listContainer = document.getElementById('shift_id');
       if (listContainer) {
-        listContainer.style.display = 'none';
+        //listContainer.style.display = 'none';
       }
       const listContainer2 = document.getElementById('material_id');
       if (listContainer2) {
-        listContainer2.style.display = 'none';
+        //listContainer2.style.display = 'none';
       }
       
   }
@@ -657,8 +686,8 @@ function getLimits(){
 
 
 
-function getTableValues(hot){
-  message={};
+function getTableValues(){
+  temp_message={};
  
   if (hot) {
     hot.getData().forEach((row, rowIndex) => {
@@ -670,13 +699,14 @@ function getTableValues(hot){
         }
       });
       if (Object.keys(temp).length >0){
-      message[kamyon_id[rowIndex]] = temp; // Use the row header as the key instead of "row" + i
+      temp_message[kamyon_id[rowIndex]] = temp; // Use the row header as the key instead of "row" + i
       }
     });
 
   }
-  console.log("message:    ",message); 
-  saveJsonObject()
+  console.log("message:    ",temp_message); 
+  return temp_message;
+  
 }
   
 
@@ -688,7 +718,7 @@ function getTableValues(hot){
 
 
 
-function saveJsonObject(){
+function saveJsonObject(message){
     var saved = selectedShift+","+selectedMaterial
     // Save JSON object to local storage${limits}
     localStorage.setItem(saved, JSON.stringify(message));
@@ -711,6 +741,7 @@ function uploadJsonObject(){
       const confirmed = confirm(`Seçilen alanda kayıtlı veri var! Silmek istermisiniz`);
       if (confirmed) {
         deleteJsonObject(saved)
+        hot;
       }else{
         console.log("savedJsonObject:   ",savedJsonObject)
         message={};
@@ -718,12 +749,15 @@ function uploadJsonObject(){
     } else {
       console.log('No saved data found.');
       savedJsonObject={};
+      message={};
     }
 }
 
 
 function deleteJsonObject(key) {
   localStorage.removeItem(key);
+  savedJsonObject={};
+  message={};
   console.log(`Deleted JSON object with key: ${key}`);
 }
 
@@ -736,113 +770,13 @@ function deleteJsonObject(key) {
 
 
 
-function createTable() {
-  // Check if the table container already exists
-  const existingTableContainer = document.querySelectorAll('.table-container, .table-container2, .table-container3');
-  existingTableContainer.forEach((container) => {
-    const parentElement = container.parentElement;
-    if (parentElement) {
-      parentElement.removeChild(container);
-    }
-    columnTotalsObject ={}
-    rowTotals ={}
-    message ={}
-
-  });
-
-
-
-
-  const tableContainer = document.createElement('div');
-  tableContainer.classList.add('table-container');
-
-  const headerRowContainer = document.createElement('div');
-  //headerRowContainer.classList.add('header-row-container');
-
-  // Create the table
-  const table = document.createElement('table');
-
-  // Create the table header row
-  const headerRow = document.createElement('tr');
-  const headerCell = document.createElement('th');
-
-  headerCell.textContent = 'ARAÇLAR';
-  headerCell.style.textAlign = 'left';
-  headerRow.appendChild(headerCell); // An empty header cell in the top-left corner
-  for (const makinaName in makinalar) {
-    if (makinalar.hasOwnProperty(makinaName)) {
-      const headerCell = document.createElement('th');
-      headerCell.textContent = makinalar[makinaName];
-      headerCell.style.width = '50px';
-      headerRow.appendChild(headerCell);
-
-    }
-  }
-  table.appendChild(headerRow);
-
-  // Create rows and input cells
-  for (const kamyonName in kamyon_id) {
-    if (kamyon_id.hasOwnProperty(kamyonName)) {
-      const row = document.createElement('tr');
-      const rowHeaderCell = document.createElement('th');
-      rowHeaderCell.textContent = kamyon_id[kamyonName];
-      rowHeaderCell.style.textAlign = 'left';
-      rowHeaderCell.classList.add('row-headers'); // Add the class 'row-header'
-      //rowHeaderCell.style.width = '1000px';
-      row.appendChild(rowHeaderCell);
-
-      for (const makinaName in makinalar) {
-        if (makinalar.hasOwnProperty(makinaName)) {
-          const cell = document.createElement('td');
-          const input = document.createElement('input');
-          input.type = 'number';
-          input.style.width = '50px';
-          input.addEventListener('blur', function () {
-                  const enteredValue = parseFloat(input.value) || 0;
-                  if (enteredValue > limits) {
-                      alert(`Günlük limit: ${limits} `);
-                      input.value = '';
-                  }
-              });
-          try{
-            input.value = savedJsonObject[kamyon_id[kamyonName]][makinalar[makinaName]]
-            input.style.color = 'black';
-            input.style.fontWeight = 'bold';
-            input.style.backgroundColor = 'lightblue';
-          }catch{
-            console.log("veri yok")
-          }
-          
-          input.addEventListener('input', createSummary);
-          cell.appendChild(input);
-          row.appendChild(cell);
-        }
-      }
-
-      table.appendChild(row);
-    }
-  }
-  
-
-  tableContainer.appendChild(table);
-  //document.body.appendChild(headerRowContainer);
-  document.body.appendChild(tableContainer);
-
-
-  }
-
-
-
-
-
-
 
 
 
 function createSummary(hot){
 
   calculateRowTotals(hot);
-  calculateColumnTotals2(hot);
+  calculateColumnTotals(hot);
 
 
   // Remove all existing .table-container2 elements from the document.body
@@ -995,22 +929,8 @@ function createSummary(hot){
 
 
   // Add submit button
-  var submitButton = document.createElement("button");
-  submitButton.textContent = "Taslağı Kaydet";
-  submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
-  submitButton.addEventListener("click", function() {
-    console.log("basıldı")
-    //console.log(columnTotalsObject); // Display column totals in the console as a JSON object
-    //console.log(rowTotals); // Display row totals with row header names in the console as a JSON object
-    getTableValues(hot)
-    
-
-  });
-  const existingButton = document.querySelector('button');
-  if (!existingButton){
-    document.body.appendChild(submitButton);
-
-  }
+  
+  
 
   
 }
