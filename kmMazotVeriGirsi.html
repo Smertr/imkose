@@ -541,9 +541,11 @@ function createTable2(table_id, works, equipment ,limits,totals) {
       const cellProperties = {};
 
       // Make all cells in the first column read-only
+      /*
       if (col === 0) {
         cellProperties.readOnly = true;
       }
+      */
       for (let i =0; i <equipment.length; i++){
         for (let j =0; j <workedVehicle.length; j++){
             if (equipment[i] === workedVehicle[j]){
