@@ -2,6 +2,11 @@
 <html>
 <head>
     <title>Data Table with Add Button</title>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.2/xlsx.full.min.js"></script>
+
+
     <style>
 
         /* Submit button styles */
@@ -128,6 +133,7 @@
     <div class="button-container">
         <button id="addButton" style="display: none;" onclick="addRow()">Ekle</button>
         <button id="submitButton" style="display: none;" onclick="submitForm()">Kaydet</button>
+        <button id="summaryButton" style="display: none;" onclick="pivotMessage()">Özet</button>
     </div>
 
     <script>
@@ -302,8 +308,10 @@ function getMetaData() {
             document.getElementById('tonaj').style.display = 'block';
             document.getElementById('addButton').style.display = 'block';
             document.getElementById('submitButton').style.display = 'block';
+            document.getElementById('summaryButton').style.display = 'block';
             addButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
             submitButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
+            summaryButton.classList.add("submit-btn"); // Add the CSS class "submit-btn"
             var tonajtable = document.getElementById('ton');
             tonajtable.value = oldTonaj;
 
@@ -573,6 +581,7 @@ function getMetaData() {
         
 
         function addRow() {
+            
             var tableBody = document.querySelector('#tableContainer table tbody');
             var newRow = document.createElement('tr');
             var headers = document.querySelectorAll('#tableContainer table thead th');
@@ -677,36 +686,140 @@ function getMetaData() {
         }
 
 
+function removeDuplicates(array) {
+  return array.filter((value, index, self) => {
+    return self.indexOf(value) === index;
+  });
+}
 
 
-        function submitForm() {
-          var tonajtable = document.getElementById('ton');
-          tonaj = tonajtable.value
+function pivotMessage(){
+            var temp_message={};
+            var tableRows = document.querySelectorAll('#tableContainer table tbody tr');
+            var headers = tableData
 
-          var blankFlag=0;
-          var tableRows = document.querySelectorAll('#tableContainer table tbody tr');
-          var headers = tableData
+              
+            var values = [];
+
+            for (var i = 0; i < tableRows.length; i++) {
+                var rowValues = [];
+                var rowInputs = tableRows[i].querySelectorAll('input, select'); // Include select elements in the query
+
+                for (var j = 0; j < rowInputs.length; j++) {
+                    if (rowInputs[j].tagName === 'INPUT') {
+                        rowValues.push(rowInputs[j].value);
+                    } else if (rowInputs[j].tagName === 'SELECT') {
+                        rowValues.push(rowInputs[j].options[rowInputs[j].selectedIndex].value); // Get the selected option value
+                    }
+                }
+
+                values.push(rowValues);
+            }
+
+            // Log the values row by row and column by column
+            for (var i = 0; i < values.length; i++) {
+                var tempMessage ={}
+                tempMessage["ts"] = timestamp
+                for (var j = 0; j < values[i].length; j++) {
+                    if(values[i][j] != ""){
+                        tempMessage[headers[j]] = values[i][j]
+                    }else{
+                        blankFlag=1;
+                        
+                    }
+                    
+                }
+                temp_message[i] = tempMessage
+                }
+
+
+
+
+
+
+
+
+
+            var items =[]
+            
+            for (var i = 0; i < Object.values(temp_message).length; i++) {
+                items.push(temp_message[i]["NAKLİYE"])
+                items.push(temp_message[i]["MAKİNA"])
+            } 
+            items = removeDuplicates(items)
+            
+            console.log("items:  ",items)
+            var temps =[]
+            for (var i = 0; i < items.length; i++) {
+                var temp={}
+                temp["id"] = items[i]
+                temp["sefer"] = 0
+                temp["mazot"] = 0
+                temp["çalışma"] = 0
+                for (var j = 0; j < Object.values(temp_message).length; j++) {
+                    if (items[i] == temp_message[j]["NAKLİYE"]){
+                        temp["sefer"] += parseInt(temp_message[j]["SEFER"])
+                        temp["mazot"] += parseInt(temp_message[j]["NAKLİYE MAZOT"])
+                        temp["çalışma"]  += parseInt(temp_message[j]["KM"])
+                    }else if (items[i] == temp_message[j]["MAKİNA"]){
+                        temp["sefer"] += parseInt(temp_message[j]["SEFER"])
+                        temp["mazot"] += parseInt(temp_message[j]["MAKİNA MAZOT"])
+                        temp["çalışma"]  += parseInt(temp_message[j]["SAAT"])
+                    }
+                
+                }
+
+            temps.push(temp) 
+
+                
+            } 
+
+            
+            console.log("temps:  ",temps)
+            // Create a worksheet from 'temps' data
+            const ws = XLSX.utils.json_to_sheet(temps);
+
+            // Create a workbook and add the worksheet
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+
+            // Generate a blob containing the Excel data
+            XLSX.writeFile(wb, 'data.xlsx'); // This will initiate the download
+
+           
+}
+
+function submitForm() {
+        
+        
+        message={}
+        var tonajtable = document.getElementById('ton');
+        tonaj = tonajtable.value
+
+        var blankFlag=0;
+        var tableRows = document.querySelectorAll('#tableContainer table tbody tr');
+        var headers = tableData
 
           
-          var values = [];
+        var values = [];
 
-          for (var i = 0; i < tableRows.length; i++) {
+        for (var i = 0; i < tableRows.length; i++) {
             var rowValues = [];
             var rowInputs = tableRows[i].querySelectorAll('input, select'); // Include select elements in the query
 
             for (var j = 0; j < rowInputs.length; j++) {
-              if (rowInputs[j].tagName === 'INPUT') {
-                rowValues.push(rowInputs[j].value);
-              } else if (rowInputs[j].tagName === 'SELECT') {
-                rowValues.push(rowInputs[j].options[rowInputs[j].selectedIndex].value); // Get the selected option value
-              }
+                if (rowInputs[j].tagName === 'INPUT') {
+                    rowValues.push(rowInputs[j].value);
+                } else if (rowInputs[j].tagName === 'SELECT') {
+                    rowValues.push(rowInputs[j].options[rowInputs[j].selectedIndex].value); // Get the selected option value
+                }
             }
 
             values.push(rowValues);
-          }
+        }
 
-          // Log the values row by row and column by column
-          for (var i = 0; i < values.length; i++) {
+        // Log the values row by row and column by column
+        for (var i = 0; i < values.length; i++) {
             var tempMessage ={}
             tempMessage["ts"] = timestamp
             for (var j = 0; j < values[i].length; j++) {
@@ -719,23 +832,24 @@ function getMetaData() {
                 
             }
             message[i] = tempMessage
-          }
-          if(blankFlag===1){
-            alert("Boş Bırakılmış Sekme Var. Lütfen Verileri Tamamlayn!")
-        }else{
-             if(tonaj ===""){
-                alert("Lütfen Toplam Tonaj Değeri Giriniz!")
-              }else{
-                sendForm()
-              }
-        }
+            }
+            if(blankFlag===1){
+                alert("Boş Bırakılmış Sekme Var. Lütfen Verileri Tamamlayn!")
+            }else{
+                if(tonaj ===""){
+                    alert("Lütfen Toplam Tonaj Değeri Giriniz!")
+                }else{
+                    sendForm()
+                }
+            }   
           
 
           console.log("message:  ",message)
           console.log("tonaj:  ",tonaj)
+          
          
           
-        }
+}
 
 
         function sendForm(){
